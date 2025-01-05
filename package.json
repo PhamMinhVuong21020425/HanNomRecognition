@@ -68,7 +68,7 @@
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.15.0"
   },
-  "description": "Project with Node.js and Express framework for a major assignment in the Sofware Development Laboratory.",
+  "description": "Project with Node.js Express and Next.js framework for a major assignment in the Sofware Development Laboratory.",
   "main": "src/bin/www.ts",
   "repository": {
     "type": "git",

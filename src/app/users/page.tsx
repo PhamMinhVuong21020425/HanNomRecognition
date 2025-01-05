@@ -2,7 +2,7 @@ import React from 'react';
 import axios from '@/lib/axios';
 
 const fetchData = async () => {
-  const res = await axios.get('/be');
+  const res = await axios.get('/');
   return res.data;
 };
 

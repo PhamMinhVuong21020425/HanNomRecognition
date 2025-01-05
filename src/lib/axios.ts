@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const request = axios.create({
-  baseURL: process.env.APP_URL,
+  baseURL: process.env.BACKEND_URL,
   withCredentials: true,
 });
 

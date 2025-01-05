@@ -27,6 +27,7 @@ const server = http.createServer(app);
 /**
  * Listen on provided port, on all network interfaces.
  */
+
 NextRenderer.init().then(() => {
   server.listen(port, () => {
     console.log(
@@ -36,6 +37,7 @@ NextRenderer.init().then(() => {
   server.on('error', onError);
   server.on('listening', onListening);
 });
+
 /**
  * Normalize a port into a number, string, or false.
  */
