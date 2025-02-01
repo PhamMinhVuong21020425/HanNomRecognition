@@ -11,7 +11,7 @@ export default [
   { files: ['**/*.{js,mjs,cjs,ts,jsx,tsx,pug}'] },
   {
     ignores: [
-      'src/public/**',
+      'public/**',
       'test/**',
       'node_modules/**',
       'dist/**',

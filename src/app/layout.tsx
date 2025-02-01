@@ -1,5 +1,8 @@
+import './globals.css';
 import React from 'react';
 import type { Metadata } from 'next';
+
+import StoreProvider from './StoreProvider';
 
 export const metadata: Metadata = {
   title: 'Han Nom Recognition',
@@ -19,8 +22,10 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico?v=2" />
         <link rel="stylesheet" href="/stylesheets/global.css" />
       </head>
-      <body>
-        <main className="font-poppins">{children}</main>
+      <body suppressHydrationWarning={true}>
+        <StoreProvider>
+          <main className="font-poppins">{children}</main>
+        </StoreProvider>
       </body>
     </html>
   );

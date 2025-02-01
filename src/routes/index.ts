@@ -1,8 +1,12 @@
-import express, { Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import homeController from '../controllers/home.controller';
-const router = express.Router();
+import authRouter from './auth.routes';
+import userRouter from './user.routes';
 
-/* GET home page. */
+const router: Router = Router();
+
+router.use('/auth', authRouter);
+router.use('/users', userRouter);
 router.get('/', homeController);
 
 export default router;

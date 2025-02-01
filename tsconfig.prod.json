@@ -4,5 +4,5 @@
     "sourceMap": false,
     "removeComments": true
   },
-  "exclude": ["src/public/", "build.ts"]
+  "exclude": ["node_modules", "public/", "build.ts"]
 }

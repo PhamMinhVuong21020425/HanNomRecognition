@@ -1,0 +1,248 @@
+.navbar {
+  display: none;
+}
+.menu-icon {
+  display: none;
+}
+@media only screen and (max-width: 739px) {
+  .menu-icon {
+    display: block;
+    font-size: 21px;
+  }
+  .navbar {
+    &.open {
+      transform: translateX(0%);
+      transition: transform 0.5s ease-in-out;
+    }
+    transform: translateX(-100%);
+    transition: transform 0.5s ease-in-out;
+    display: block;
+    position: fixed;
+    z-index: 9999;
+    height: 100%;
+    padding: 48px 25px;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    background-color: white;
+
+    .close-button {
+      font-size: 30px;
+      position: absolute;
+      z-index: 5;
+      top: 15px;
+      right: 12px;
+      padding: 0;
+    }
+    .user-info {
+      margin-left: 0;
+      position: relative;
+      align-items: center;
+      display: flex;
+      .account-dropdown {
+        padding-right: 16px;
+        background-repeat: no-repeat;
+        background-position: right center;
+        background-size: 8px 5px;
+        align-items: center;
+        display: flex;
+        color: #555;
+        .account-avatar {
+          margin-right: 11px;
+          width: 30px;
+          flex-shrink: 0;
+          .circle-avatar {
+            height: 30px;
+            justify-content: center;
+            align-items: center;
+            display: flex;
+            border-radius: 50%;
+            background-color: #1d5193;
+            color: #fff;
+            .text {
+              font-size: 12px;
+            }
+          }
+        }
+      }
+    }
+    .navbar-nav {
+      width: 100%;
+      margin-top: 2em !important;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: start;
+      display: flex;
+      margin: 0px;
+      padding: 0;
+      list-style-type: none;
+      .nav-item {
+        text-transform: uppercase;
+        width: 100%;
+        border-bottom: 1px solid #ebebeb;
+        position: relative;
+        margin: 0;
+        .home-icon {
+          color: #1d5193;
+          margin-bottom: 7px;
+          justify-content: center;
+          align-items: center;
+          display: flex;
+          border-radius: 50%;
+          width: 30px;
+          height: 30px;
+          background-color: #edf5ff;
+          &:hover {
+            color: #f68500;
+          }
+        }
+        .link {
+          &:hover {
+            color: #1d5193 !important;
+          }
+          padding: 15px 0;
+          position: relative;
+          display: block;
+          font-weight: 600;
+          font-size: 14px;
+          line-height: 1.5;
+          &:after {
+            content: '';
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            opacity: 0;
+            transition: all 0.3s ease;
+            height: 3px;
+            background-color: #f68500;
+          }
+        }
+      }
+    }
+  }
+}
+@media only screen and (max-width: 1023px) and (min-width: 740px) {
+  .menu-icon {
+    display: block;
+    font-size: 21px;
+  }
+  .navbar {
+    &.open {
+      transform: translateX(0%);
+      transition: transform 0.5s ease-in-out;
+    }
+    transform: translateX(-100%);
+    transition: transform 0.5s ease-in-out;
+    display: block;
+    position: fixed;
+    z-index: 9999;
+    height: 100%;
+    padding: 48px 25px;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    background-color: white;
+
+    .close-button {
+      font-size: 30px;
+      position: absolute;
+      z-index: 5;
+      top: 15px;
+      right: 12px;
+      padding: 0;
+    }
+    .user-info {
+      margin-left: 0;
+      position: relative;
+      align-items: center;
+      display: flex;
+      .account-dropdown {
+        padding-right: 16px;
+        background-repeat: no-repeat;
+        background-position: right center;
+        background-size: 8px 5px;
+        align-items: center;
+        display: flex;
+        color: #555;
+        .account-avatar {
+          margin-right: 11px;
+          width: 30px;
+          flex-shrink: 0;
+          .circle-avatar {
+            height: 30px;
+            justify-content: center;
+            align-items: center;
+            display: flex;
+            border-radius: 50%;
+            background-color: #1d5193;
+            color: #fff;
+            .text {
+              font-size: 12px;
+            }
+          }
+        }
+      }
+    }
+    .navbar-nav {
+      width: 100%;
+      margin-top: 2em !important;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: start;
+      display: flex;
+      margin: 0px;
+      padding: 0;
+      list-style-type: none;
+      .nav-item {
+        text-transform: uppercase;
+        width: 100%;
+        border-bottom: 1px solid #ebebeb;
+        position: relative;
+        margin: 0;
+        .home-icon {
+          color: #1d5193;
+          margin-bottom: 7px;
+          justify-content: center;
+          align-items: center;
+          display: flex;
+          border-radius: 50%;
+          width: 30px;
+          height: 30px;
+          background-color: #edf5ff;
+          &:hover {
+            color: #f68500;
+          }
+        }
+        .link {
+          &:hover {
+            color: #1d5193 !important;
+          }
+          padding: 15px 0;
+          position: relative;
+          display: block;
+          font-weight: 600;
+          font-size: 14px;
+          line-height: 1.5;
+          &:after {
+            content: '';
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            opacity: 0;
+            transition: all 0.3s ease;
+            height: 3px;
+            background-color: #f68500;
+          }
+        }
+      }
+    }
+  }
+}

@@ -40,5 +40,5 @@
     "src/**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["src/public/"]
+  "exclude": ["node_modules", "public/"]
 }

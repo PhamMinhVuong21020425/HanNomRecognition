@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { NextParsedUrlQuery } from 'next/dist/server/request-meta';
+import { parse } from 'url';
 import next from 'next';
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -20,8 +21,9 @@ class NextRenderer {
     await nextApp.render(req, res, pagePath, query);
   }
 
-  static async handleRequests(req: Request, res: Response, next: NextFunction) {
-    await handle(req, res);
+  static handleRequests(req: Request, res: Response, next: NextFunction) {
+    const parsedUrl = parse(req.url!, true);
+    handle(req, res, parsedUrl);
   }
 }
 
