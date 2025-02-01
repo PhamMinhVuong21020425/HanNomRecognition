@@ -1,5 +1,6 @@
 import createError, { HttpError } from 'http-errors';
 import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import logger from 'morgan';
@@ -37,6 +38,14 @@ AppDataSource.initialize()
 
 // create and setup express app
 const app = express();
+
+// CORS setup
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN,
+    credentials: true,
+  })
+);
 
 // Passport config
 app.use(passport.initialize());
