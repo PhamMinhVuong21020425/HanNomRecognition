@@ -1,0 +1,139 @@
+.documentation-page {
+  @apply min-h-screen;
+
+  .documentation-section {
+    max-width: 1290px;
+    padding-right: 0.25em;
+    padding-left: 0.25em;
+    margin-right: auto;
+    margin-left: auto;
+    .documentation-hero {
+      .documentation-header {
+        font-size: 30px;
+        font-weight: 700;
+        color: #1d5193;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        line-height: 1.36;
+      }
+    }
+
+    .documentation-content {
+      .documentation-nav {
+        .nav-link {
+          @apply flex items-center px-3 py-2 text-gray-600 rounded-lg text-sm;
+          @apply hover:bg-gray-100 hover:text-blue-600 transition-all duration-200;
+
+          &.active {
+            @apply bg-blue-50 text-blue-600 font-medium;
+          }
+        }
+
+        .nav-section {
+          h3 {
+            @apply text-gray-900;
+          }
+        }
+      }
+
+      .documentation-main {
+        .doc-section {
+          scroll-margin-top: 160px;
+          @apply mb-16 pb-8 border-b border-gray-200;
+
+          &:last-child {
+            @apply border-b-0;
+          }
+
+          .feature-card {
+            @apply bg-white p-6 rounded-lg shadow-sm;
+            @apply border border-gray-100;
+            @apply hover:border-blue-200 transition-colors duration-200;
+          }
+
+          .step-item {
+            @apply flex items-start gap-4;
+
+            .step-number {
+              @apply w-8 h-8 rounded-full bg-blue-600 text-white;
+              @apply flex items-center justify-center font-bold;
+            }
+
+            .step-content {
+              @apply flex-1;
+            }
+          }
+
+          .format-card {
+            @apply bg-white p-6 rounded-lg shadow-sm;
+            @apply border border-gray-100;
+            @apply hover:border-blue-200 transition-colors duration-200;
+          }
+
+          .code-block {
+            @apply font-mono text-sm;
+            @apply overflow-x-auto;
+          }
+
+          .info-box,
+          .tips-box {
+            @apply border-l-4 border-blue-500;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Custom scrollbar for code blocks
+.code-block::-webkit-scrollbar {
+  @apply h-2 w-2;
+}
+
+.code-block::-webkit-scrollbar-track {
+  @apply bg-gray-800;
+}
+
+.code-block::-webkit-scrollbar-thumb {
+  @apply bg-gray-600 rounded-full;
+  @apply hover:bg-gray-500;
+}
+
+// Responsive styles
+@media (max-width: 768px) {
+  .documentation-content {
+    @apply flex-col;
+
+    .documentation-nav {
+      @apply w-full mb-8;
+
+      .sticky {
+        @apply relative top-0;
+      }
+    }
+  }
+
+  .feature-grid {
+    @apply grid-cols-1;
+  }
+
+  .export-formats {
+    @apply grid-cols-1;
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.doc-section {
+  animation: fadeIn 0.5s ease-out;
+}

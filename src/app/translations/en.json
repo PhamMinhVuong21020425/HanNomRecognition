@@ -2,6 +2,9 @@
   "metadata.login.title": "Login",
   "metadata.signup.title": "Sign up",
   "metadata.verify.title": "Verify account",
+  "metadata.documentation.title": "Documentation",
+  "metadata.about-us.title": "About us",
+  "metadata.contact.title": "Contact",
 
   "homeheader.university": "Han-Nom's text Recognition",
   "homeheader.yourmodel": "Your model",

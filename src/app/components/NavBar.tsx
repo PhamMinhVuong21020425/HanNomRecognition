@@ -67,9 +67,10 @@ function NavBar() {
               <FormattedMessage id="homeheader.request" />
             </a>
           </li>
+
           <li onClick={handleHiddenNav} className="nav-item">
-            <a className="link" href="/contact">
-              <FormattedMessage id="homeheader.contact" />
+            <a className="link" href="/documentation">
+              <FormattedMessage id="homeheader.documentation" />
             </a>
           </li>
           <li onClick={handleHiddenNav} className="nav-item">
@@ -79,7 +80,7 @@ function NavBar() {
           </li>
           <li onClick={handleHiddenNav} className="nav-item">
             <a className="link" href="/contact">
-              <FormattedMessage id="homeheader.documentation" />
+              <FormattedMessage id="homeheader.contact" />
             </a>
           </li>
         </ul>
