@@ -28,15 +28,15 @@ const server = http.createServer(app);
  * Listen on provided port, on all network interfaces.
  */
 
-NextRenderer.init().then(() => {
-  server.listen(port, () => {
-    console.log(
-      `\x1b[33m> Server is running on \x1b[34mhttp://localhost:${port}\x1b[0m`
-    );
-  });
-  server.on('error', onError);
-  server.on('listening', onListening);
+// NextRenderer.init().then(() => {
+server.listen(port, () => {
+  console.log(
+    `\x1b[33m> Server is running on \x1b[34mhttp://localhost:${port}\x1b[0m`
+  );
 });
+server.on('error', onError);
+server.on('listening', onListening);
+// });
 
 /**
  * Normalize a port into a number, string, or false.

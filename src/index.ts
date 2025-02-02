@@ -93,7 +93,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 // routes
 app.use('/be', indexRouter);
 
-app.use(NextRenderer.handleRequests);
+// app.use(NextRenderer.handleRequests);
 
 // catch 404 and forward to error handler
 app.use(function (req: Request, res: Response, next: NextFunction) {
