@@ -168,7 +168,7 @@ function Login() {
                         </label>
                       </div>
                       <a
-                        href="/forgot-pass"
+                        href="/auth/forgot-pass"
                         className="text-sm text-indigo-600 hover:underline"
                       >
                         <FormattedMessage id="login.forgotpassword" />

@@ -15,7 +15,14 @@ export async function middleware(req: NextRequest) {
 
   const session = await response.json();
 
-  if (!session.user && requestUrl.pathname !== '/') {
+  if (
+    !session.user &&
+    requestUrl.pathname !== '/' &&
+    requestUrl.pathname !== '/import' &&
+    requestUrl.pathname !== '/documentation' &&
+    requestUrl.pathname !== '/about-us' &&
+    requestUrl.pathname !== '/contact'
+  ) {
     return NextResponse.redirect(`${requestUrl.origin}/auth/login`);
   }
 

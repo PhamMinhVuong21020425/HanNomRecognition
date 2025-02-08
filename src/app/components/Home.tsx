@@ -24,7 +24,7 @@ function Home() {
           </div>
           <div className="project-option">
             <div className="left bg-blue-100">
-              <div className="left-title">
+              <div className="left-title font-sans">
                 <FormattedMessage id="project.unlogin" />
               </div>
               <div className="left-description">
@@ -39,7 +39,7 @@ function Home() {
                 </div>
               </div>
               <a href="/import" className="project-button">
-                <div className="title">
+                <div className="title font-sans">
                   <FormattedMessage id="project.loginstart" />
                 </div>
                 <div className="icon">
@@ -48,7 +48,7 @@ function Home() {
               </a>
             </div>
             <div className="right">
-              <div className="left-title">
+              <div className="left-title font-sans">
                 <FormattedMessage id="project.login" />
               </div>
               <div className="left-description">
@@ -64,7 +64,7 @@ function Home() {
               </div>
               {userData ? (
                 <a href="/import" className="project-button">
-                  <div className="title">
+                  <div className="title font-sans">
                     <FormattedMessage id="project.loginstart" />
                   </div>
                   <div className="icon">
@@ -72,8 +72,8 @@ function Home() {
                   </div>
                 </a>
               ) : (
-                <a href="/login" className="project-button">
-                  <div className="title">
+                <a href="/auth/login" className="project-button">
+                  <div className="title font-sans">
                     <FormattedMessage id="project.unloginstart" />
                   </div>
                   <div className="icon">

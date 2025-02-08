@@ -1,0 +1,67 @@
+.modal-content {
+  position: relative;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 0;
+  border-radius: 2px;
+  box-shadow:
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  pointer-events: auto;
+  width: 520px;
+  padding-bottom: 0px;
+  .ant-modal {
+    padding-bottom: 0;
+  }
+  .ant-modal-content {
+    padding: 0;
+    .ant-modal-footer {
+      padding-right: 24px;
+      padding-bottom: 20px;
+    }
+  }
+
+  .modal-body {
+    padding: 24px;
+    font-size: 14px;
+    line-height: 1.5715;
+    word-wrap: break-word;
+    .import-format {
+      .title {
+        font-size: 15px;
+        font-weight: 500;
+        padding-bottom: 15px;
+        .force {
+          color: red;
+        }
+      }
+      .select-format {
+        width: 100%;
+        .select-tag {
+          width: 100%;
+          height: 35px;
+          color: black;
+          font-size: 13px;
+        }
+      }
+    }
+    .import-file {
+      margin-top: 30px;
+    }
+  }
+}
+
+.modal-header {
+  padding: 16px 24px;
+  color: rgba(0, 0, 0, 0.85);
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  border-radius: 2px 2px 0 0;
+}
+
+.error-message {
+  color: #e53e3e;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
