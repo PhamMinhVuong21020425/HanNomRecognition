@@ -1,0 +1,9 @@
+.label-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  :hover {
+    color: #ff4d4f;
+    cursor: pointer;
+  }
+}

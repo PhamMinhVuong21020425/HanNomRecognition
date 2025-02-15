@@ -4,6 +4,7 @@ import { faBars } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { FormattedMessage } from 'react-intl';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
+import { useAppSelector, selectUser } from '@/lib/redux';
 
 function NavBar() {
   const [showMenu, setShowMenu] = useState(false);
@@ -15,10 +16,7 @@ function NavBar() {
     setShowMenu(false);
   };
 
-  let userData = {
-    fullName: 'Nguyễn Văn A',
-    Email: 'abc@gmail.com',
-  };
+  const userData = useAppSelector(selectUser);
 
   return (
     <div>
@@ -35,10 +33,24 @@ function NavBar() {
           <div className="account-dropdown">
             <div className="account-avatar">
               <div className="circle-avatar">
-                <span className="text">U</span>
+                {userData ? (
+                  userData.avatar_url ? (
+                    <img
+                      src={userData.avatar_url}
+                      alt="avatar"
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <span className="text">
+                      {userData.name?.split(' ').pop()?.charAt(0) || 'U'}
+                    </span>
+                  )
+                ) : (
+                  <span className="text">G</span>
+                )}
               </div>
             </div>
-            <span>{userData ? userData.fullName : 'Chưa có tài khoản'}</span>
+            <span>{userData ? userData.name : 'Guest'}</span>
           </div>
         </div>
         <ul className="navbar-nav">
