@@ -1,0 +1,10 @@
+.svg-wrapper {
+  background-color: #d3d3d3;
+  height: 100%;
+  overflow: hidden;
+  cursor: pointer;
+  .svg-container {
+    margin: 20px;
+    cursor: pointer;
+  }
+}

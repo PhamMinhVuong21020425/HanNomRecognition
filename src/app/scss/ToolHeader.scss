@@ -1,0 +1,115 @@
+.tool-header-container {
+  display: flex;
+  padding-left: 0;
+  padding-right: 0;
+  line-height: 0;
+  height: 48px;
+  background: #d8d8d8;
+  width: 100%;
+  flex: 0 0 auto;
+  .left-header {
+    width: 50%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    .title {
+      margin: 0 16px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .link-home {
+      opacity: 0.8;
+      color: #303030;
+      padding: 0 8px;
+      margin-right: 8px;
+      padding-top: 0.01px !important;
+      line-height: 30px;
+      &:hover {
+        cursor: pointer;
+        color: #1d5193;
+        font-weight: 500;
+      }
+    }
+    .link {
+      opacity: 0.8;
+      color: #303030;
+      padding: 0 8px;
+      margin-right: 8px;
+      padding-top: 0.01px !important;
+      line-height: 30px;
+      &:hover {
+        cursor: pointer;
+        color: #1d5193;
+        font-weight: 500;
+      }
+    }
+  }
+  .right-header {
+    width: 50%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-direction: row;
+    .exit {
+      text-align: center;
+      border-radius: 10%;
+      border: 1px solid #1d5193;
+      height: 70%;
+      width: 60px;
+      margin: auto 20px;
+      background-color: transparent;
+      font-size: 14px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      &:hover {
+        background-color: #1d5193;
+        color: #fff;
+      }
+    }
+    .model-name {
+      height: 70%;
+      text-align: center;
+      padding: 10px;
+      margin-right: 30px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .user-info {
+      margin: auto 20px;
+      display: flex;
+      flex-direction: row;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+      .name {
+        padding-left: 10px;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .login-link {
+        padding-left: 10px;
+        font-weight: 600;
+        font-size: 15px;
+        &:hover {
+          color: #1d5193;
+        }
+      }
+    }
+  }
+}
+
+@media only screen and (max-width: 739px) {
+  .tool-header-container {
+    .left-header {
+      .link {
+        display: none;
+      }
+    }
+    .right-header {
+      .model-name {
+        display: none;
+      }
+    }
+  }
+}

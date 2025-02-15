@@ -1,0 +1,53 @@
+@import '../../../node_modules/antd/dist/reset.css';
+
+.ant-collapse-content-box {
+  padding: 0 !important;
+}
+
+.ant-collapse-header {
+  background-color: #1890ff !important;
+  color: white !important;
+}
+
+.ant-collapse-borderless > .ant-collapse-item {
+  border-bottom: 0px solid #d9d9d9 !important;
+}
+
+.ant-collapse-extra:hover {
+  cursor: pointer;
+}
+
+@media only screen and (max-width: 739px) {
+  .tool-container {
+    height: 100vh !important;
+    .left-tool {
+      display: none;
+    }
+    .main-tool {
+      .center-tool {
+        height: 90% !important;
+      }
+    }
+  }
+}
+
+@media only screen and (max-width: 1023px) and (min-width: 740px) {
+  .tool-container {
+    display: flex;
+    flex-direction: column !important;
+    height: 100vh !important;
+    .left-tool {
+      max-width: 100%;
+    }
+    .main-tool {
+      max-width: 100%;
+      width: 100%;
+      .center-tool {
+        height: 90% !important;
+      }
+    }
+    .right-tool {
+      max-width: 100%;
+    }
+  }
+}

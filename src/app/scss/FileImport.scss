@@ -1,0 +1,25 @@
+.file-tool-container {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  li {
+    display: block;
+    padding: 1em 1em;
+    text-align: center;
+    :hover {
+      background-color: #1890ff;
+      color: white;
+      cursor: pointer;
+    }
+    span {
+      display: block;
+      padding: 10px 10px;
+      text-align: center;
+      :hover {
+        background-color: #1890ff;
+        color: white;
+        cursor: pointer;
+      }
+    }
+  }
+}
