@@ -46,23 +46,23 @@ type SetXmlPreviewBoxStatusPayload = {
 const initialState: AnnotationState = {
   mouseCoordinate: { x: 0, y: 0 },
   imageFiles: [],
-  selDrawImageIndex: 0,
+  selDrawImageIndex: -1,
   selImageIndexes: [],
   imageSizes: [],
   txtFiles: [],
-  selDrawTxtIndex: 0,
+  selDrawTxtIndex: -1,
   selTxtIndexes: [],
   drawStyle: drawStyleFactory(0) as DrawStyle,
   drawStatus: DRAW_STATUS_TYPES.IDLE,
   selShapeType: SHAPE_TYPES.POLYGON,
   currentShape: null,
   shapes: [],
-  selShapeIndex: 0,
+  selShapeIndex: -1,
   labelTypes: [],
   selLabelType: '',
   labelBoxStatus: LABEL_STATUS_TYPES.IDLE,
   labelBoxVisible: false,
-  selPreviewIndex: 0,
+  selPreviewIndex: -1,
   xmlPreviewBoxVisible: false,
   urlBoxVisible: false,
   closePointRegion: 0,
@@ -106,7 +106,7 @@ export const annotationSlice = createSlice({
       state.selDrawImageIndex = action.payload.selDrawImageIndex;
       state.drawStatus = DRAW_STATUS_TYPES.IDLE;
       state.currentShape = null;
-      state.selShapeIndex = 0;
+      state.selShapeIndex = -1;
     },
 
     setImageSizes: (
@@ -143,7 +143,7 @@ export const annotationSlice = createSlice({
       state.selDrawTxtIndex = action.payload.selDrawTxtIndex;
       state.drawStatus = DRAW_STATUS_TYPES.IDLE;
       state.currentShape = null;
-      state.selShapeIndex = 0;
+      state.selShapeIndex = -1;
     },
 
     setSelTxtIndexes: (
@@ -271,7 +271,7 @@ export const annotationSlice = createSlice({
             ? item?.filter((_, subIndex) => subIndex !== state.selShapeIndex)
             : item
         );
-        state.selShapeIndex = 0;
+        state.selShapeIndex = -1;
       }
     },
 
@@ -282,7 +282,7 @@ export const annotationSlice = createSlice({
         state.shapes = state.shapes.map((item, index) =>
           index === state.selDrawImageIndex ? [] : item
         );
-        state.selShapeIndex = 0;
+        state.selShapeIndex = -1;
       }
     },
 

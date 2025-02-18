@@ -19,6 +19,7 @@ export async function middleware(req: NextRequest) {
     !session.user &&
     requestUrl.pathname !== '/' &&
     requestUrl.pathname !== '/import' &&
+    requestUrl.pathname !== '/annotation-tool' &&
     requestUrl.pathname !== '/documentation' &&
     requestUrl.pathname !== '/about-us' &&
     requestUrl.pathname !== '/contact'

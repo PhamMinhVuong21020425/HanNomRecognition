@@ -39,7 +39,7 @@ function ImageItem(props: ImageItemProps) {
   };
 
   const onItemClick = () => {
-    dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     dispatch(setSelDrawImageIndex({ selDrawImageIndex: fileIndex }));
   };
 
@@ -70,7 +70,7 @@ function ImageItem(props: ImageItemProps) {
         drawStatus:
           fileIndex === selDrawImageIndex ? DRAW_STATUS_TYPES.IDLE : drawStatus,
         shapes: shapes.filter((item, index) => index !== fileIndex),
-        selShapeIndex: fileIndex === selDrawImageIndex ? 0 : selShapeIndex,
+        selShapeIndex: fileIndex === selDrawImageIndex ? -1 : selShapeIndex,
       })
     );
   };

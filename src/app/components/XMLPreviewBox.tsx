@@ -32,7 +32,7 @@ function XMLPreviewBox() {
   const onCancel = () => {
     dispatch(
       setXmlPreviewBoxStatus({
-        selPreviewIndex: 0,
+        selPreviewIndex: -1,
         xmlPreviewBoxVisible: false,
       })
     );

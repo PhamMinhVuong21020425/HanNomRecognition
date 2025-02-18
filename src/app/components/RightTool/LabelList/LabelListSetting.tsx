@@ -25,7 +25,7 @@ function LabelListSetting() {
     });
     dispatch(setShapes({ shapes: shapesCopy }));
     if (selShapeIndex) {
-      dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+      dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     }
   };
 

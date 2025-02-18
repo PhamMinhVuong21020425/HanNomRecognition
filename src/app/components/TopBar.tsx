@@ -1,5 +1,5 @@
 import '../scss/TopBar.scss';
-import { useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { message } from 'antd';
 import { Dropdown, Button } from 'antd';
 import JSZip from 'jszip';
@@ -23,6 +23,8 @@ import {
   setSelShapeIndex,
   setSelDrawImageIndex,
   setFullScreen,
+  selectImagesRedux,
+  setImagesRedux,
 } from '@/lib/redux';
 
 function TopBar() {
@@ -38,72 +40,58 @@ function TopBar() {
     shapes,
     selShapeIndex,
   } = state;
+  const files = useAppSelector(selectImagesRedux);
   const router = useRouter();
-  const [backend, setBackend] = useState('');
-  // useEffect(() => {
-  //   // if access route not properly
-  //   // if (!prop) {
-  //   //     router.push('/');
-  //   // }
-
-  //   // only allow image file
-  //   if (!prop) return;
-  //   const files = [...prop].filter(
-  //     file =>
-  //       IMAGE_TYPES.indexOf(getURLExtension(file.name).toLowerCase()) !== -1
-  //   );
-  //   if (files.length === 0) return;
-
-  //   const newImageFiles = [...imageFiles, ...files];
-  //   const newImageSizes = newImageFiles.map((item, index) =>
-  //     imageSizes[index] ? imageSizes[index] : imageSizeFactory({})
-  //   );
-  //   const newShapes = newImageFiles.map((item, index) =>
-  //     shapes[index] ? shapes[index] : []
-  //   );
-
-  //   dispatch(
-  //     setImageFiles({
-  //       imageFiles: newImageFiles,
-  //       selDrawImageIndex: imageFiles.length ? selDrawImageIndex : 0,
-  //       imageSizes: newImageSizes,
-  //       drawStatus,
-  //       shapes: newShapes,
-  //       selShapeIndex,
-  //     })
-  //   );
-  //   const msg =
-  //     files.length > 1 ? `${files.length} images` : `${files.length} image`;
-  //   message.success(`Success to load ${msg}.`);
-  // }, []);
-
-  let listImage = [];
-  let data: any = [];
-  const onFilesChange = async (event: { target: { files: any } }) => {
+  useEffect(() => {
     // only allow image file
-    let abc = event.target.files;
-    const formData = new FormData();
-    for (let i = 0; i < abc.length; i++) {
-      formData.append('file', abc[i]);
-      formData.append('upload_preset', 'ocrNom');
-
-      let response = await axios.post(
-        'https://api.cloudinary.com/v1_1/dm3pvrs73/image/upload',
-        formData
-      );
-      console.log(response.data.secure_url);
-      listImage.push(response.data.secure_url);
-    }
-    data = await axios.post(backend + '/api/detect', {
-      link: listImage,
-    });
-    const files = [...event.target.files].filter(
-      file =>
-        IMAGE_TYPES.indexOf(getURLExtension(file.name).toLowerCase()) !== -1
-    );
+    if (!files) return;
     if (files.length === 0) return;
 
     const newImageFiles = [...imageFiles, ...files];
+    const newImageSizes = newImageFiles.map((item, index) =>
+      imageSizes[index] ? imageSizes[index] : imageSizeFactory({})
+    );
+    const newShapes = newImageFiles.map((item, index) =>
+      shapes[index] ? shapes[index] : []
+    );
+
+    dispatch(
+      setImageFiles({
+        imageFiles: newImageFiles,
+        selDrawImageIndex: imageFiles.length ? selDrawImageIndex : 0,
+        imageSizes: newImageSizes,
+        drawStatus,
+        shapes: newShapes,
+        selShapeIndex,
+      })
+    );
+    const msg =
+      files.length > 1 ? `${files.length} images` : `${files.length} image`;
+    message.success(`Success to load ${msg}.`);
+  }, []);
+
+  let listImage = [];
+  let data: any = [];
+  const onFilesChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files).filter(file =>
+      IMAGE_TYPES.some(type => file.type.includes(type))
+    );
+
+    const formData = new FormData();
+    newFiles.forEach(image => formData.append('files', image));
+
+    const response = await axios.post(
+      'http://localhost:5000/api/detect',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+
+    const newImageFiles = [...imageFiles, ...newFiles];
     const newImageSizes = newImageFiles.map((item, index) =>
       imageSizes[index] ? imageSizes[index] : imageSizeFactory({})
     );
@@ -181,14 +169,14 @@ function TopBar() {
     if (!imageFiles.length || imageFiles.length < 2) return;
     let index = selDrawImageIndex + 1;
     if (index >= imageFiles.length) index = 0;
-    dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     dispatch(setSelDrawImageIndex({ selDrawImageIndex: index }));
   };
   const onPrevImageClick = () => {
     if (!imageFiles.length || imageFiles.length < 2) return;
     let index = selDrawImageIndex - 1;
     if (index < 0) index = imageFiles.length - 1;
-    dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     dispatch(setSelDrawImageIndex({ selDrawImageIndex: index }));
   };
 

@@ -53,6 +53,7 @@ export const reduxStore = configureStore({
     return getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        ignoredPaths: ['files.images'],
       },
     }).concat(loggerMiddleware);
   },

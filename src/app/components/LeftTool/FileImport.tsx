@@ -65,7 +65,7 @@ function FileImport() {
     if (!imageFiles.length || imageFiles.length < 2) return;
     let index = selDrawImageIndex + 1;
     if (index >= imageFiles.length) index = 0;
-    dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     dispatch(setSelDrawImageIndex({ selDrawImageIndex: index }));
   };
 
@@ -73,7 +73,7 @@ function FileImport() {
     if (!imageFiles.length || imageFiles.length < 2) return;
     let index = selDrawImageIndex - 1;
     if (index < 0) index = imageFiles.length - 1;
-    dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     dispatch(setSelDrawImageIndex({ selDrawImageIndex: index }));
   };
 

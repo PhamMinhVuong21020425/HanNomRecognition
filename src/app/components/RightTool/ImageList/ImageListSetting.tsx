@@ -60,7 +60,9 @@ function ImageListSetting() {
             : DRAW_STATUS_TYPES.IDLE,
         shapes: newShapes,
         selShapeIndex:
-          selImageIndexes.indexOf(selDrawImageIndex) === -1 ? selShapeIndex : 0,
+          selImageIndexes.indexOf(selDrawImageIndex) === -1
+            ? selShapeIndex
+            : -1,
       })
     );
   };
@@ -70,11 +72,11 @@ function ImageListSetting() {
     dispatch(
       setImageFiles({
         imageFiles: [],
-        selDrawImageIndex: 0,
+        selDrawImageIndex: -1,
         imageSizes: [],
         drawStatus: DRAW_STATUS_TYPES.IDLE,
         shapes: [],
-        selShapeIndex: 0,
+        selShapeIndex: -1,
       })
     );
   };

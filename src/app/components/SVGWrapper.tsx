@@ -27,6 +27,7 @@ import {
 } from '@/constants';
 
 import {
+  selectDetections,
   setCurrentShape,
   setDrawStatus,
   setImageSizes,
@@ -42,41 +43,6 @@ import {
   Coordinate,
   DrawStyle,
 } from '@/lib/redux/slices/annotationSlice/types';
-
-const data = {
-  data: [
-    {
-      image_name: 'image1.jpg',
-      objects_detection: [
-        {
-          class: 'car',
-          confidence: 0.9,
-          coordinate: [
-            { x: 10, y: 10 },
-            { x: 100, y: 10 },
-            { x: 100, y: 100 },
-            { x: 10, y: 100 },
-          ],
-        },
-      ],
-    },
-    {
-      image_name: 'image2.jpg',
-      objects_detection: [
-        {
-          class: 'car',
-          confidence: 0.9,
-          coordinate: [
-            { x: 10, y: 10 },
-            { x: 100, y: 10 },
-            { x: 100, y: 100 },
-            { x: 10, y: 100 },
-          ],
-        },
-      ],
-    },
-  ],
-};
 
 let pointsX = [];
 let pointsY = [];
@@ -109,6 +75,8 @@ function SVGWrapper() {
     labelStyle,
   } = drawStyle;
 
+  let listObject2 = useAppSelector(selectDetections);
+
   //dragging
   const [isDraw, setIsDraw] = useState(false);
   const [isDragging, setDragging] = useState(false);
@@ -126,29 +94,9 @@ function SVGWrapper() {
   const [loading, setLoading] = useState(false);
   // is Insert bounding box?
   const [isInsert, setInsert] = useState(true);
-  //list of object
-  let listObject2 = data.data;
-  //console.log(listObject2);
-  // let listObject = data.objects_detection;
-
-  // Extract coordinates from filtered objects
-  // const coordinates = listObject.map((obj) => obj.coordinate);
-  // const label = listObject.map((obj) => obj.name);
 
   useEffect(() => {
-    // listObject = data.objects_detection;
-    listObject2 = data.data;
-
-    // const dbRef = ref(imageDb);
-    // const snapshot = await get(child(dbRef, 'server_url'));
-    // listObject2 = await axios.post("snapshot", {
-    //     link: []
-    // })
-    // console.log(snapshot);
-  }, []);
-
-  useEffect(() => {
-    if (selDrawImageIndex === 0 || imageFiles.length === 0) return;
+    if (selDrawImageIndex === -1 || imageFiles.length === 0) return;
     const objURL = window.URL.createObjectURL(imageFiles[selDrawImageIndex]);
     try {
       setLoading(true);
@@ -160,7 +108,7 @@ function SVGWrapper() {
             imageFiles[selDrawImageIndex].name.split('.')[0]
           ) {
             handleClickPath(imageFiles[selDrawImageIndex].name);
-            listObject2.splice(index);
+            // listObject2.splice(index);
           }
         });
         setLoading(false);
@@ -210,10 +158,10 @@ function SVGWrapper() {
     } else {
       svgRef.current.style.cursor = 'not-allowed';
     }
-  }, [imageFiles, currentShape, mouseCoordinate]);
+  }, [imageFiles, currentShape]);
 
   const imageProps = useMemo(() => {
-    if (selDrawImageIndex === 0) {
+    if (selDrawImageIndex === -1) {
       return { href: '', width: 0, height: 0 };
     }
     return {
@@ -389,7 +337,7 @@ function SVGWrapper() {
     if (!isValidCoordinate({ ...mouseCoordinate })) return;
     // check dragging
     if (drawStatus === DRAW_STATUS_TYPES.SELECT) {
-      dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+      dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
       return;
     }
 
@@ -438,10 +386,10 @@ function SVGWrapper() {
   //     return path;
   // };
 
-  const handleClickPath = async (imageName: string) => {
+  const handleClickPath = (imageName: string) => {
     // danh sách tất cả các shapes đang có, phải kiểu dữ liệu mảng
     //const listShape = [shapeFactoryTest(coordinates[0]), shapeFactoryTest(coordinates[1])];
-    const result = await listObject2.find(item => {
+    const result = listObject2.find(item => {
       let imageWithoutEx = item.image_name.split('.')[0];
       // console.log(imageWithoutEx);
       let imageNameNew = imageName.split('.')[0];
@@ -452,10 +400,11 @@ function SVGWrapper() {
       list = result.objects_detection
         .filter(obj => obj.confidence > 0.3)
         .map(obj => ({
-          coordinate: obj.coordinate,
+          coordinates: obj.coordinates,
           name: obj.class,
         }));
     }
+    console.log('-----------List coordinate:', list);
     //console.log(list[0].coordinate);
     // let listShape = listObject
     //     .filter((obj) => obj.image_name === imageName)
@@ -469,7 +418,7 @@ function SVGWrapper() {
     //     });
     // }
     for (var i = 0; i < list.length; i++) {
-      const newShape = shapeFactoryTest(list[i].coordinate);
+      const newShape = shapeFactoryTest(list[i].coordinates);
       dispatch(setCurrentShape({ currentShape: newShape }));
     }
 
@@ -483,7 +432,7 @@ function SVGWrapper() {
     //     shapesCopy[selDrawImageIndex] = [...shapesCopy[selDrawImageIndex], currentShapeCopy];
     // }
     for (var i = 0; i < list.length; i++) {
-      let currentShapeCopy = cloneDeep(shapeFactoryTest(list[i].coordinate));
+      let currentShapeCopy = cloneDeep(shapeFactoryTest(list[i].coordinates));
       currentShapeCopy.paths.pop();
       currentShapeCopy.d = getSVGPathD(currentShapeCopy.paths, true);
       currentShapeCopy.label = list[i].name;
@@ -497,10 +446,7 @@ function SVGWrapper() {
   };
 
   return (
-    <div
-      className="svg-wrapper"
-      style={{ display: 'flex', justifyContent: 'flex-end' }}
-    >
+    <div className="svg-wrapper flex items-start justify-end">
       {loading && (
         <div className="loading-animation">
           <Loading />

@@ -3,3 +3,4 @@ export * from './appSlice';
 export * from './userSlice';
 export * from './eventSlice';
 export * from './annotationSlice';
+export * from './filesSlice';
