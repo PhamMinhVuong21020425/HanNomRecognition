@@ -3,9 +3,10 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 /* Types */
 import type { DetectionType } from './types';
+import type { ImageType } from '@/types/ImageType';
 
 export interface FilesState {
-  images: File[];
+  images: ImageType[];
   detections: DetectionType[];
 }
 
@@ -18,7 +19,7 @@ export const filesSlice = createSlice({
   name: 'files',
   initialState,
   reducers: {
-    setImagesRedux: (state, action: PayloadAction<File[]>) => {
+    setImagesRedux: (state, action: PayloadAction<ImageType[]>) => {
       state.images = action.payload;
     },
     setDetections: (state, action: PayloadAction<DetectionType[]>) => {

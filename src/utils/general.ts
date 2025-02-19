@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { XMLBuilder } from 'fast-xml-parser';
+import { pointsX } from '@/app/components/SVGWrapper';
 
 import {
   COCO_FOLDER_NAME,
@@ -46,17 +47,14 @@ export const getImage = (imageUrl: string, fileName = 'image.jpg') =>
     };
   });
 
-export const getImageSize = (imageUrl: string) =>
+export const getImageSizeFromUrl = (
+  imageUrl: string
+): Promise<{ width: number; height: number }> =>
   new Promise((resolve, reject) => {
     const img = new Image();
     img.src = imageUrl;
-    img.onload = function onload() {
-      const { width, height } = this as HTMLImageElement;
-      resolve({ width, height });
-    };
-    img.onerror = function onerror() {
-      reject(new Error('load image error'));
-    };
+    img.onload = () => resolve({ width: img.width, height: img.height });
+    img.onerror = err => reject(err);
   });
 
 export const getURLExtension = (url: string) => url.trim().split('.')[1];
@@ -115,7 +113,7 @@ export const getSVGPathD = (paths: Coordinate[], isFinish: boolean) => {
 
 export function getShapeXYMaxMin(paths: Coordinate[]) {
   return {
-    array: [],
+    array: pointsX,
     xmin: paths.reduce(
       (acc, cur) => (acc < cur.x ? acc : cur.x),
       Number.MAX_SAFE_INTEGER
@@ -178,7 +176,7 @@ export const imageSizeFactory = ({ width = 0, height = 0, depth = 3 }) => ({
   depth,
 });
 
-export const annotationFactory = (file: { name: string }) => ({
+export const annotationFactory = (file: File) => ({
   folder: DEFAULT_SAVE_FOLDER,
   filename: file.name,
   path: `./${DEFAULT_SAVE_FOLDER}/${file.name}`,
@@ -281,8 +279,18 @@ export const convertDateToString = (dateObj: Date) => {
   return `${year}${fMonth}${fDate}${fHour}${fMinute}${fSecond}`;
 };
 
+// fetch file from object url
+export const fetchFileFromObjectUrl = async (
+  url: string,
+  fileName: string
+): Promise<File> => {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new File([blob], fileName, { type: blob.type });
+};
+
 // xml format
-export const generateXML = (file: any, size: ImageSize, shapes: Shape[]) => {
+export const generateXML = (file: File, size: ImageSize, shapes: Shape[]) => {
   const annotation = annotationFactory(file);
   annotation.size = imageSizeFactory(size);
   annotation.object = shapes.map(shape => annotationObjectFactory(shape));
@@ -298,17 +306,13 @@ export const generateXML = (file: any, size: ImageSize, shapes: Shape[]) => {
 };
 
 // coco RECTANGLE format
-export const generateCoco = (file: any, size: ImageSize, shapes: Shape[]) => {
+export const generateCoco = (file: File, size: ImageSize, shapes: Shape[]) => {
   const annotation = annotationFactory(file);
-  annotation.object = shapes.map((shape: any) =>
-    annotationObjectFactory(shape)
-  );
-  const text = shapes.map((shape: any) =>
-    annotationCocoTxt(shape.label, shape.paths)
-  );
+  annotation.object = shapes.map(shape => annotationObjectFactory(shape));
+  const text = shapes.map(shape => annotationCocoTxt(shape.label, shape.paths));
 
   let arr: any[] = [];
-  text.forEach((item: any) => {
+  text.forEach(item => {
     const { label, xmin, ymin, width, height } = item[0];
     arr.push([label, xmin, ymin, width, height]);
   });
@@ -317,7 +321,7 @@ export const generateCoco = (file: any, size: ImageSize, shapes: Shape[]) => {
 };
 
 // yolo RECTANGLE format
-export const generateYolo = (file: any, size: ImageSize, shapes: Shape[]) => {
+export const generateYolo = (file: File, size: ImageSize, shapes: Shape[]) => {
   const annotation = annotationFactory(file);
   annotation.size = imageSizeFactory(size);
   annotation.object = shapes.map(shape => annotationObjectFactory(shape));
@@ -327,7 +331,7 @@ export const generateYolo = (file: any, size: ImageSize, shapes: Shape[]) => {
   );
 
   let arr: any[] = [];
-  text.forEach((item: any) => {
+  text.forEach(item => {
     const { label, x_center, y_center, width, height } = item[0];
     arr.push([label, x_center, y_center, width, height]);
   });
@@ -346,15 +350,23 @@ export const exportXML = (xmlStr: string, fileName = 'label.xml') => {
 };
 
 // figure zip file
-export const exportZip = (files: any, xmls: any, type: string = 'YOLO') => {
+export const exportZip = (
+  files: File[],
+  xmls: string[],
+  type: string = 'YOLO'
+) => {
   const zip = new JSZip();
-  let folder = zip.folder(COCO_FOLDER_NAME);
+  let folder: JSZip | null = null;
+
+  if (type === 'COCO') {
+    folder = zip.folder(COCO_FOLDER_NAME);
+  }
 
   if (type === 'YOLO') {
     folder = zip.folder(YOLO_FOLDER_NAME);
   }
 
-  files.forEach((file: any, index: number) => {
+  files.forEach((file: File, index: number) => {
     folder?.file(file.name, file);
     folder?.file(`${file.name.split('.')[0]}.txt`, xmls[index]);
   });

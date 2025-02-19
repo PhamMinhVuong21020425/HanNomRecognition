@@ -10,7 +10,7 @@ import {
 
 import Loading from './Loading';
 import {
-  getImageSize,
+  getImageSizeFromUrl,
   coordinateFactory,
   getSVGPathD,
   getShapeXYMaxMin,
@@ -44,8 +44,8 @@ import {
   DrawStyle,
 } from '@/lib/redux/slices/annotationSlice/types';
 
-let pointsX = [];
-let pointsY = [];
+let pointsX: number[] = [];
+let pointsY: number[] = [];
 
 function SVGWrapper() {
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -75,7 +75,7 @@ function SVGWrapper() {
     labelStyle,
   } = drawStyle;
 
-  let listObject2 = useAppSelector(selectDetections);
+  const listDetections = useAppSelector(selectDetections);
 
   //dragging
   const [isDraw, setIsDraw] = useState(false);
@@ -97,18 +97,17 @@ function SVGWrapper() {
 
   useEffect(() => {
     if (selDrawImageIndex === -1 || imageFiles.length === 0) return;
-    const objURL = window.URL.createObjectURL(imageFiles[selDrawImageIndex]);
+    const objURL = imageFiles[selDrawImageIndex].obj_url;
     try {
       setLoading(true);
-      getImageSize(objURL).then(size => {
-        const { width, height } = size as { width: number; height: number };
-        listObject2.filter((obj, index) => {
+      getImageSizeFromUrl(objURL).then(size => {
+        const { width, height } = size;
+        listDetections.filter((obj, index) => {
           if (
             obj.image_name.split('.')[0] ===
             imageFiles[selDrawImageIndex].name.split('.')[0]
           ) {
             handleClickPath(imageFiles[selDrawImageIndex].name);
-            // listObject2.splice(index);
           }
         });
         setLoading(false);
@@ -165,7 +164,7 @@ function SVGWrapper() {
       return { href: '', width: 0, height: 0 };
     }
     return {
-      href: window.URL.createObjectURL(imageFiles[selDrawImageIndex]),
+      href: imageFiles[selDrawImageIndex].obj_url,
       width: imageSizes[selDrawImageIndex].width,
       height: imageSizes[selDrawImageIndex].height,
     };
@@ -389,22 +388,22 @@ function SVGWrapper() {
   const handleClickPath = (imageName: string) => {
     // danh sách tất cả các shapes đang có, phải kiểu dữ liệu mảng
     //const listShape = [shapeFactoryTest(coordinates[0]), shapeFactoryTest(coordinates[1])];
-    const result = listObject2.find(item => {
+    const result = listDetections.find(item => {
       let imageWithoutEx = item.image_name.split('.')[0];
       // console.log(imageWithoutEx);
       let imageNameNew = imageName.split('.')[0];
       return imageWithoutEx === imageNameNew;
     });
-    let list: any = [];
-    if (result) {
-      list = result.objects_detection
-        .filter(obj => obj.confidence > 0.3)
-        .map(obj => ({
-          coordinates: obj.coordinates,
-          name: obj.class,
-        }));
-    }
-    console.log('-----------List coordinate:', list);
+
+    const listBoxes = result
+      ? result.objects_detection
+          .filter(obj => obj.confidence > 0.3)
+          .map(obj => ({
+            coordinates: obj.coordinates,
+            name: obj.class,
+          }))
+      : [];
+
     //console.log(list[0].coordinate);
     // let listShape = listObject
     //     .filter((obj) => obj.image_name === imageName)
@@ -417,10 +416,11 @@ function SVGWrapper() {
     //         payload: { currentShape: newShape },
     //     });
     // }
-    for (var i = 0; i < list.length; i++) {
-      const newShape = shapeFactoryTest(list[i].coordinates);
-      dispatch(setCurrentShape({ currentShape: newShape }));
-    }
+
+    // for (var i = 0; i < listBoxes.length; i++) {
+    //   const newShape = shapeFactoryTest(listBoxes[i].coordinates);
+    //   dispatch(setCurrentShape({ currentShape: newShape }));
+    // }
 
     const shapesCopy = cloneDeep(shapes);
 
@@ -431,11 +431,21 @@ function SVGWrapper() {
     //     currentShapeCopy.label = listLabel[i].name;
     //     shapesCopy[selDrawImageIndex] = [...shapesCopy[selDrawImageIndex], currentShapeCopy];
     // }
-    for (var i = 0; i < list.length; i++) {
-      let currentShapeCopy = cloneDeep(shapeFactoryTest(list[i].coordinates));
+
+    if (
+      shapesCopy[selDrawImageIndex] &&
+      shapesCopy[selDrawImageIndex].length > 0
+    )
+      return;
+
+    shapesCopy[selDrawImageIndex] = [];
+    for (var i = 0; i < listBoxes.length; i++) {
+      let currentShapeCopy = cloneDeep(
+        shapeFactoryTest(listBoxes[i].coordinates)
+      );
       currentShapeCopy.paths.pop();
       currentShapeCopy.d = getSVGPathD(currentShapeCopy.paths, true);
-      currentShapeCopy.label = list[i].name;
+      currentShapeCopy.label = listBoxes[i].name;
       shapesCopy[selDrawImageIndex] = [
         ...shapesCopy[selDrawImageIndex],
         currentShapeCopy,

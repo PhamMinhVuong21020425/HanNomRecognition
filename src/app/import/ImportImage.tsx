@@ -29,6 +29,7 @@ import {
   setImagesRedux,
   setDetections,
 } from '@/lib/redux';
+import type { ImageType } from '@/types/ImageType';
 
 const recentHistory = [
   {
@@ -68,7 +69,7 @@ function ImportImage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [images, setImages] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [previews, setPreviews] = useState<ImageType[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -105,7 +106,10 @@ function ImportImage() {
     );
     setImages([...images, ...imageFiles]);
 
-    const newPreviews = imageFiles.map(file => URL.createObjectURL(file));
+    const newPreviews = imageFiles.map(file => {
+      const obj_url = URL.createObjectURL(file);
+      return { obj_url, name: file.name };
+    });
     setPreviews([...previews, ...newPreviews]);
   };
 
@@ -120,7 +124,10 @@ function ImportImage() {
     );
     setImages([...images, ...newFiles]);
 
-    const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+    const newPreviews = newFiles.map(file => {
+      const obj_url = URL.createObjectURL(file);
+      return { obj_url, name: file.name };
+    });
     setPreviews([...previews, ...newPreviews]);
 
     setIsLoading(false);
@@ -128,12 +135,12 @@ function ImportImage() {
 
   const handleRemoveImage = (index: number) => {
     setImages(images.filter((_, i) => i !== index));
-    URL.revokeObjectURL(previews[index]);
+    URL.revokeObjectURL(previews[index].obj_url);
     setPreviews(previews.filter((_, i) => i !== index));
   };
 
   const handleClearAll = () => {
-    previews.forEach(url => URL.revokeObjectURL(url));
+    previews.forEach(img => URL.revokeObjectURL(img.obj_url));
     setImages([]);
     setPreviews([]);
     setShowDeleteDialog(false);
@@ -144,7 +151,7 @@ function ImportImage() {
 
     try {
       setIsLoading(true);
-      dispatch(setImagesRedux(images));
+      dispatch(setImagesRedux(previews));
       const formData = new FormData();
       images.forEach(image => formData.append('files', image));
 
@@ -157,7 +164,6 @@ function ImportImage() {
       );
 
       dispatch(setDetections(response.data));
-      handleClearAll();
       router.push('/annotation-tool');
     } catch (error) {
       console.error('Error during upload:', error);
@@ -219,10 +225,10 @@ function ImportImage() {
 
         {/* Image Preview Grid */}
         <div className="grid lg:grid-cols-8 md:grid-cols-6 sm:grid-cols-4 gap-4 mt-6">
-          {displayPreviews.map((src, index) => (
+          {displayPreviews.map((img, index) => (
             <div key={index} className="relative group">
               <img
-                src={src}
+                src={img.obj_url}
                 alt={`preview ${index}`}
                 className="w-32 h-32 object-cover rounded-lg transition-transform duration-200 group-hover:scale-105"
               />

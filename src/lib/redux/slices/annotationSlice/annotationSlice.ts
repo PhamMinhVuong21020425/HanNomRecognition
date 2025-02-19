@@ -13,9 +13,10 @@ import { drawStyleFactory } from '@/utils/general';
 
 /* Types */
 import type { AnnotationState, Shape, ImageSize, DrawStyle } from './types';
+import type { ImageType } from '@/types/ImageType';
 
 type SetImageFilesPayload = {
-  imageFiles: any[];
+  imageFiles: ImageType[];
   selDrawImageIndex: number;
   imageSizes: ImageSize[];
   drawStatus: string;
@@ -65,7 +66,7 @@ const initialState: AnnotationState = {
   selPreviewIndex: -1,
   xmlPreviewBoxVisible: false,
   urlBoxVisible: false,
-  closePointRegion: 0,
+  closePointRegion: 6,
   dragStatus: '',
   fullScreen: '',
   isShowUpload: false,
@@ -222,11 +223,11 @@ export const annotationSlice = createSlice({
     ) => {
       const { selShapeIndex } = action.payload;
       state.drawStatus =
-        selShapeIndex === null
+        selShapeIndex === -1
           ? DRAW_STATUS_TYPES.IDLE
           : DRAW_STATUS_TYPES.SELECT;
 
-      if (state.selDrawImageIndex !== null) {
+      if (state.selDrawImageIndex !== -1) {
         state.shapes = state.shapes.map((item, index) => {
           if (index !== state.selDrawImageIndex) return item;
           return item.map((subItem, subIndex) => {
@@ -246,7 +247,7 @@ export const annotationSlice = createSlice({
     ) => {
       const { selShapeIndex } = action.payload;
       state.drawStatus =
-        selShapeIndex === null
+        selShapeIndex === -1
           ? DRAW_STATUS_TYPES.IDLE
           : DRAW_STATUS_TYPES.SELECT;
       state.selShapeIndex = selShapeIndex;
@@ -264,7 +265,7 @@ export const annotationSlice = createSlice({
     },
 
     deleteSelShape: state => {
-      if (state.selDrawImageIndex !== null && state.selShapeIndex !== null) {
+      if (state.selDrawImageIndex !== -1 && state.selShapeIndex !== -1) {
         state.drawStatus = DRAW_STATUS_TYPES.IDLE;
         state.shapes = state.shapes.map((item, index) =>
           index === state.selDrawImageIndex
@@ -276,7 +277,7 @@ export const annotationSlice = createSlice({
     },
 
     deleteAllShapes: state => {
-      if (state.selDrawImageIndex !== null) {
+      if (state.selDrawImageIndex !== -1) {
         state.drawStatus = DRAW_STATUS_TYPES.IDLE;
         state.currentShape = null;
         state.shapes = state.shapes.map((item, index) =>
