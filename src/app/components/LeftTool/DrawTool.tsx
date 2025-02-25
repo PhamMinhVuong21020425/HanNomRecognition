@@ -1,18 +1,21 @@
-import { useState } from 'react';
 import { cloneDeep } from 'lodash';
-import { Row, Col, Button, Radio, Space, RadioChangeEvent } from 'antd';
-import { faDrawPolygon } from '@fortawesome/free-solid-svg-icons/faDrawPolygon';
+import { useEffect, useState } from 'react';
+import { Row, Col, Tooltip, Divider } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faVectorSquare } from '@fortawesome/free-solid-svg-icons/faVectorSquare';
-import { faDeleteLeft } from '@fortawesome/free-solid-svg-icons/faDeleteLeft';
-import { faEraser } from '@fortawesome/free-solid-svg-icons/faEraser';
-import { faUpDownLeftRight } from '@fortawesome/free-solid-svg-icons/faUpDownLeftRight';
-import { faArrowPointer } from '@fortawesome/free-solid-svg-icons/faArrowPointer';
-import { faRotateLeft } from '@fortawesome/free-solid-svg-icons/faRotateLeft';
-import { faXmark } from '@fortawesome/free-solid-svg-icons';
-import { faEllipsis } from '@fortawesome/free-solid-svg-icons/faEllipsis';
+import {
+  faDrawPolygon,
+  faVectorSquare,
+} from '@fortawesome/free-solid-svg-icons';
+import {
+  MousePointer,
+  Move,
+  RotateCcw,
+  X,
+  Trash2,
+  Eraser,
+  MoreHorizontal,
+} from 'lucide-react';
 
-import { DRAW_STATUS_TYPES, SHAPE_TYPE_OPTIONS } from '@/constants';
 import {
   deleteAllShapes,
   deleteSelShape,
@@ -24,9 +27,21 @@ import {
   useAppDispatch,
   useAppSelector,
 } from '@/lib/redux';
+import { DRAW_STATUS_TYPES } from '@/constants';
+
+// Define active tool type
+type ActiveToolType =
+  | 'pointer'
+  | 'move'
+  | 'rotate'
+  | 'polygon'
+  | 'rectangle'
+  | 'more'
+  | null;
 
 function DrawTool() {
   const dispatch = useAppDispatch();
+  const [showClearAllDialog, setShowClearAllDialog] = useState(false);
   const state = useAppSelector(state => state.annotation);
 
   const {
@@ -36,7 +51,34 @@ function DrawTool() {
     currentShape,
     shapes,
   } = state;
-  const [isDrag, setIsDrag] = useState(false);
+
+  // Track which tool is active
+  const [activeTool, setActiveTool] = useState<ActiveToolType>(
+    selShapeType as ActiveToolType
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && currentShape !== null) {
+        onResetClick();
+      }
+
+      if (event.key === 'Delete' && selShapeIndex !== -1) {
+        onClearSelShapeClick();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [currentShape, selShapeIndex]);
+
+  const handleToolClick = (tool?: ActiveToolType, callback?: () => void) => {
+    if (tool) setActiveTool(tool);
+    if (callback) callback();
+  };
 
   const onResetClick = () => {
     const shapesCopy = cloneDeep(shapes);
@@ -50,11 +92,27 @@ function DrawTool() {
     dispatch(setDrawStatus({ drawStatus: DRAW_STATUS_TYPES.IDLE }));
   };
 
-  const onSelShapeTypeChange = (event: RadioChangeEvent) => {
-    dispatch(setNotDragImage());
-    if (event.target.value === selShapeType) return;
-    dispatch(setSelShapeType({ selShapeType: event.target.value }));
-    onResetClick();
+  const onSelShapeTypeChange = (shapeType: string) => {
+    if (shapeType === selShapeType) return;
+    dispatch(setSelShapeType({ selShapeType: shapeType }));
+    switch (shapeType) {
+      case 'pointer':
+        dispatch(setNotDragImage());
+        break;
+      case 'move':
+        dispatch(setDragImage());
+        break;
+      case 'rotate':
+        dispatch(setNotDragImage());
+        break;
+      case 'polygon':
+      case 'rectangle':
+        dispatch(setNotDragImage());
+        break;
+      default:
+        dispatch(setNotDragImage());
+        break;
+    }
   };
 
   const onClearSelShapeClick = () => {
@@ -63,181 +121,273 @@ function DrawTool() {
 
   const onClearAllClick = () => {
     dispatch(deleteAllShapes());
+    setShowClearAllDialog(false);
   };
 
-  // normal mouse
-  const onNormalMouse = () => {
-    dispatch(setNotDragImage());
+  // Common styles for tool buttons
+  const toolButtonStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '40px',
+    height: '40px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    background: 'white',
+    border: '1px solid #e8e8e8',
   };
-  // drag button
-  const onDragClick = () => {
-    setIsDrag(!isDrag);
 
-    if (!isDrag) {
-      dispatch(setNotDragImage());
-    } else {
-      dispatch(setDragImage());
-    }
-  };
   return (
-    <Row justify="center" gutter={[0, 12]}>
-      <Col xs={24} style={{ textAlign: 'center' }}>
-        <Button
-          type="text"
-          onClick={onNormalMouse}
-          style={{ textAlign: 'center' }}
-        >
-          <span>
-            <FontAwesomeIcon
-              icon={faArrowPointer}
-              style={{ paddingRight: '2px', fontSize: '20px' }}
-            />
-          </span>
-        </Button>
-      </Col>
-      <Col xs={24} style={{ textAlign: 'center' }}>
-        <Button
-          type="text"
-          onClick={onDragClick}
-          style={{ textAlign: 'center' }}
-        >
-          {isDrag ? (
-            <span>
-              <FontAwesomeIcon
-                icon={faUpDownLeftRight}
-                style={{ paddingRight: '2px', fontSize: '20px' }}
+    <div
+      className="draw-tool-container"
+      style={{
+        backgroundColor: '#ffffff',
+        borderRadius: '12px',
+        padding: '16px 8px',
+        width: '70px',
+      }}
+    >
+      <Row justify="center" gutter={[0, 12]}>
+        {/* Navigation Tools */}
+        <Col span={24} style={{ display: 'flex', justifyContent: 'center' }}>
+          <Tooltip title="Selection Tool" placement="right">
+            <div
+              style={{
+                ...toolButtonStyle,
+                backgroundColor: activeTool === 'pointer' ? '#f0f9eb' : 'white',
+                borderColor: activeTool === 'pointer' ? '#b7eb8f' : '#e8e8e8',
+              }}
+              onClick={() =>
+                handleToolClick('pointer', () =>
+                  onSelShapeTypeChange('pointer')
+                )
+              }
+            >
+              <MousePointer
+                size={22}
+                color={activeTool === 'pointer' ? '#52c41a' : '#222222'}
               />
-            </span>
-          ) : (
-            <span>
-              <FontAwesomeIcon
-                icon={faUpDownLeftRight}
-                style={{
-                  paddingRight: '2px',
-                  fontSize: '20px',
-                  color: '#1890ff',
-                }}
+            </div>
+          </Tooltip>
+        </Col>
+        <Col span={24} style={{ display: 'flex', justifyContent: 'center' }}>
+          <Tooltip title="Move Tool" placement="right">
+            <div
+              style={{
+                ...toolButtonStyle,
+                backgroundColor: activeTool === 'move' ? '#f0f9eb' : 'white',
+                borderColor: activeTool === 'move' ? '#b7eb8f' : '#e8e8e8',
+              }}
+              onClick={() =>
+                handleToolClick('move', () => onSelShapeTypeChange('move'))
+              }
+            >
+              <Move
+                size={22}
+                color={activeTool === 'move' ? '#52c41a' : '#222222'}
               />
-            </span>
-          )}
-        </Button>
-      </Col>
-      <Col xs={24} style={{ textAlign: 'center' }}>
-        <Button type="text" style={{ textAlign: 'center' }}>
-          <span>
-            <FontAwesomeIcon
-              icon={faRotateLeft}
-              style={{ paddingRight: '2px', fontSize: '20px' }}
-            />
-          </span>
-        </Button>
-      </Col>
-      <div
-        style={{
-          height: '1px',
-          backgroundColor: 'black',
-          width: '100%',
-          zIndex: '100',
-          margin: ' 10px 0px',
-        }}
-      ></div>
-      <Col xs={24} style={{ textAlign: 'center' }}>
-        <Radio.Group
-          value={selShapeType}
-          onChange={e => onSelShapeTypeChange(e)}
-        >
-          <Space direction="vertical" style={{ width: '100%' }}>
-            {SHAPE_TYPE_OPTIONS.map(item => (
-              <Radio.Button
-                key={item.value}
-                value={item.value}
-                style={{ border: ' none', fontSize: '20px', margin: '5px 0' }}
-              >
-                {item.label === 'Polygon' ? (
-                  <span>
-                    <FontAwesomeIcon
-                      icon={faDrawPolygon}
-                      style={{ paddingRight: '5px' }}
-                    />
-                  </span>
-                ) : (
-                  <span>
-                    <FontAwesomeIcon
-                      icon={faVectorSquare}
-                      style={{ paddingRight: '5px' }}
-                    />
-                  </span>
-                )}
-              </Radio.Button>
-            ))}
-          </Space>
-        </Radio.Group>
-      </Col>
-      <div
-        style={{
-          height: '1px',
-          backgroundColor: 'black',
-          width: '100%',
-          zIndex: '100',
-          margin: ' 10px 0px',
-        }}
-      ></div>
-      <Col xs={24} style={{ textAlign: 'center', width: '100%' }}>
-        <Button
-          type="text"
-          onClick={onResetClick}
-          disabled={currentShape === null}
-          style={{ textAlign: 'center' }}
-        >
-          <FontAwesomeIcon
-            icon={faXmark}
-            style={{ paddingRight: '2px', fontSize: '20px' }}
-          />
-        </Button>
-      </Col>
-      <Col xs={24} style={{ textAlign: 'center' }}>
-        <Button
-          type="text"
-          onClick={onClearSelShapeClick}
-          disabled={selShapeIndex === -1}
-          style={{ textAlign: 'center' }}
-        >
-          <span>
-            <FontAwesomeIcon
-              icon={faDeleteLeft}
-              style={{ paddingRight: '2px', fontSize: '20px' }}
-            />
-          </span>
-        </Button>
-      </Col>
-      <Col xs={24} style={{ textAlign: 'center' }}>
-        <Button
-          type="text"
-          onClick={onClearAllClick}
-          disabled={
-            !shapes[selDrawImageIndex] || shapes[selDrawImageIndex].length === 0
-          }
-          style={{ textAlign: 'center' }}
-        >
-          <span>
-            <FontAwesomeIcon
-              icon={faEraser}
-              style={{ paddingRight: '2px', fontSize: '20px' }}
-            />
-          </span>
-        </Button>
-      </Col>
-      <Col xs={24} style={{ textAlign: 'center' }}>
-        <Button type="text" style={{ textAlign: 'center' }}>
-          <span>
-            <FontAwesomeIcon
-              icon={faEllipsis}
-              style={{ paddingRight: '2px', fontSize: '20px' }}
-            />
-          </span>
-        </Button>
-      </Col>
-    </Row>
+            </div>
+          </Tooltip>
+        </Col>
+        <Col span={24} style={{ display: 'flex', justifyContent: 'center' }}>
+          <Tooltip title="Rotate" placement="right">
+            <div
+              style={{
+                ...toolButtonStyle,
+                backgroundColor: activeTool === 'rotate' ? '#f0f9eb' : 'white',
+                borderColor: activeTool === 'rotate' ? '#b7eb8f' : '#e8e8e8',
+              }}
+              onClick={() =>
+                handleToolClick('rotate', () => onSelShapeTypeChange('rotate'))
+              }
+            >
+              <RotateCcw
+                size={22}
+                color={activeTool === 'rotate' ? '#52c41a' : '#222222'}
+              />
+            </div>
+          </Tooltip>
+        </Col>
+
+        <Divider style={{ margin: '8px 0', borderColor: '#f0f0f0' }} />
+
+        {/* Drawing Tools */}
+        <Col span={24} style={{ display: 'flex', justifyContent: 'center' }}>
+          <Tooltip title="Rectangle Tool" placement="right">
+            <div
+              style={{
+                ...toolButtonStyle,
+                backgroundColor:
+                  activeTool === 'rectangle' ? '#f0f9eb' : 'white',
+                borderColor: activeTool === 'rectangle' ? '#b7eb8f' : '#e8e8e8',
+              }}
+              onClick={() =>
+                handleToolClick('rectangle', () =>
+                  onSelShapeTypeChange('rectangle')
+                )
+              }
+            >
+              <FontAwesomeIcon
+                icon={faVectorSquare}
+                color={activeTool === 'rectangle' ? '#52c41a' : '#222222'}
+                style={{ fontSize: '22px' }}
+              />
+            </div>
+          </Tooltip>
+        </Col>
+        <Col span={24} style={{ display: 'flex', justifyContent: 'center' }}>
+          <Tooltip title="Polygon Tool" placement="right">
+            <div
+              style={{
+                ...toolButtonStyle,
+                backgroundColor: activeTool === 'polygon' ? '#f0f9eb' : 'white',
+                borderColor: activeTool === 'polygon' ? '#b7eb8f' : '#e8e8e8',
+              }}
+              onClick={() =>
+                handleToolClick('polygon', () =>
+                  onSelShapeTypeChange('polygon')
+                )
+              }
+            >
+              <FontAwesomeIcon
+                icon={faDrawPolygon}
+                color={activeTool === 'polygon' ? '#52c41a' : '#222222'}
+                style={{ fontSize: '22px' }}
+              />
+            </div>
+          </Tooltip>
+        </Col>
+
+        <Divider style={{ margin: '8px 0', borderColor: '#f0f0f0' }} />
+
+        {/* Manipulation Tools */}
+        <Col span={24} style={{ display: 'flex', justifyContent: 'center' }}>
+          <Tooltip title="Cancel Current Shape (ESC)" placement="right">
+            <div
+              style={{
+                ...toolButtonStyle,
+                opacity: currentShape === null ? 0.5 : 1,
+                cursor: currentShape === null ? 'not-allowed' : 'pointer',
+              }}
+              onClick={() =>
+                currentShape !== null && handleToolClick(null, onResetClick)
+              }
+            >
+              <X
+                size={22}
+                color={currentShape === null ? '#999999' : '#222222'}
+              />
+            </div>
+          </Tooltip>
+        </Col>
+        <Col span={24} style={{ display: 'flex', justifyContent: 'center' }}>
+          <Tooltip title="Delete Selected Shape (DELETE)" placement="right">
+            <div
+              style={{
+                ...toolButtonStyle,
+                opacity: selShapeIndex === -1 ? 0.5 : 1,
+                cursor: selShapeIndex === -1 ? 'not-allowed' : 'pointer',
+              }}
+              onClick={() =>
+                selShapeIndex !== -1 &&
+                handleToolClick(null, onClearSelShapeClick)
+              }
+            >
+              <Trash2
+                size={22}
+                color={selShapeIndex === -1 ? '#999999' : '#222222'}
+              />
+            </div>
+          </Tooltip>
+        </Col>
+        <Col span={24} style={{ display: 'flex', justifyContent: 'center' }}>
+          <Tooltip title="Clear All Shapes" placement="right">
+            <div
+              style={{
+                ...toolButtonStyle,
+                opacity:
+                  !shapes[selDrawImageIndex] ||
+                  shapes[selDrawImageIndex].length === 0
+                    ? 0.5
+                    : 1,
+                cursor:
+                  !shapes[selDrawImageIndex] ||
+                  shapes[selDrawImageIndex].length === 0
+                    ? 'not-allowed'
+                    : 'pointer',
+              }}
+              onClick={() => {
+                if (
+                  shapes[selDrawImageIndex] &&
+                  shapes[selDrawImageIndex].length > 0
+                ) {
+                  setShowClearAllDialog(true);
+                }
+              }}
+            >
+              <Eraser
+                size={22}
+                color={
+                  !shapes[selDrawImageIndex] ||
+                  shapes[selDrawImageIndex].length === 0
+                    ? '#999999'
+                    : '#222222'
+                }
+              />
+            </div>
+          </Tooltip>
+        </Col>
+
+        {/* Clear All Shapes Confirmation Modal */}
+        {showClearAllDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-2">Clear All Images</h3>
+              <p className="text-gray-600 mb-4">
+                Are you sure you want to delete all shapes?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowClearAllDialog(false)}
+                  className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() =>
+                    shapes[selDrawImageIndex] &&
+                    shapes[selDrawImageIndex].length > 0 &&
+                    handleToolClick(null, onClearAllClick)
+                  }
+                  className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <Col span={24} style={{ display: 'flex', justifyContent: 'center' }}>
+          <Tooltip title="More Options" placement="right">
+            <div
+              style={{
+                ...toolButtonStyle,
+                backgroundColor: activeTool === 'more' ? '#f0f9eb' : 'white',
+                borderColor: activeTool === 'more' ? '#b7eb8f' : '#e8e8e8',
+              }}
+              onClick={() => handleToolClick('more')}
+            >
+              <MoreHorizontal
+                size={22}
+                color={activeTool === 'more' ? '#52c41a' : '#222222'}
+              />
+            </div>
+          </Tooltip>
+        </Col>
+      </Row>
+    </div>
   );
 }
 
