@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faMagnifyingGlassPlus,
   faMagnifyingGlassMinus,
+  faRotateLeft,
 } from '@fortawesome/free-solid-svg-icons';
 
 import Loading from './Loading';
@@ -46,8 +47,15 @@ import type {
 let pointsX: number[] = [];
 let pointsY: number[] = [];
 
+// Define zoom step and limits
+const ZOOM_STEP = 0.1;
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 5;
+const ZOOM_ANIMATION_DURATION = 150; // ms
+
 function SVGWrapper() {
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const svgContainerRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(false);
   const [mouseCoordinate, setMouseCoordinate] = useState<Coordinate>({
     x: 0,
@@ -80,21 +88,114 @@ function SVGWrapper() {
 
   const listDetections = useAppSelector(selectDetections);
 
-  // dragging
+  // Dragging state
   const [isDraw, setIsDraw] = useState(false);
-  const [isDragging, setDragging] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [prevPosition, setPrevPosition] = useState({ x: 0, y: 0 });
 
-  // zoom images
+  // Zoom state
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Get center point of current view
+  const getViewCenter = () => {
+    if (!svgRef.current || !svgContainerRef.current) return { x: 0, y: 0 };
+
+    const containerRect = svgContainerRef.current.getBoundingClientRect();
+    const svgRect = svgRef.current.getBoundingClientRect();
+
+    return {
+      x: (containerRect.width / 2 - position.x) / scale,
+      y: (containerRect.height / 2 - position.y) / scale,
+    };
+  };
+
+  // Zoom around the center point
+  const zoomAround = (newScale: number) => {
+    if (isTransitioning) return;
+
+    const center = getViewCenter();
+    const oldScale = scale;
+
+    // Calculate new position to keep the center point fixed
+    const newPosition = {
+      x: position.x - center.x * (newScale - oldScale),
+      y: position.y - center.y * (newScale - oldScale),
+    };
+
+    setIsTransitioning(true);
+    setScale(newScale);
+    setPosition(newPosition);
+
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, ZOOM_ANIMATION_DURATION);
+  };
 
   const handleZoomIn = () => {
-    setScale(scale => scale + 0.1);
+    const newScale = Math.min(scale + ZOOM_STEP, MAX_ZOOM);
+    zoomAround(newScale);
   };
 
   const handleZoomOut = () => {
-    setScale(scale => scale - 0.1);
+    const newScale = Math.max(scale - ZOOM_STEP, MIN_ZOOM);
+    zoomAround(newScale);
+  };
+
+  const handleReset = () => {
+    setIsTransitioning(true);
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, ZOOM_ANIMATION_DURATION);
+  };
+
+  // Handle wheel zoom
+  // const handleWheel = (event: React.WheelEvent) => {
+  //   event.preventDefault();
+  //   // Determine zoom direction
+  //   const delta = event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+  //   const newScale = Math.max(MIN_ZOOM, Math.min(scale + delta, MAX_ZOOM));
+  //   if (newScale !== scale) {
+  //     zoomAround(newScale);
+  //   }
+  // };
+
+  // Handle wheel zoom and pan
+  const handleWheel = (event: React.WheelEvent) => {
+    // Stop propagation to prevent parent elements from scrolling
+    event.stopPropagation();
+
+    // Prevent default browser scrolling behavior
+    event.preventDefault();
+
+    // Check if it's a pinch-to-zoom gesture (ctrl key is pressed or with multiple touch points)
+    if (event.ctrlKey || event.metaKey) {
+      // This is a zoom gesture
+      // Determine zoom direction - negative deltaY means zoom in, positive means zoom out
+      const delta = event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+      const newScale = Math.max(MIN_ZOOM, Math.min(scale + delta, MAX_ZOOM));
+
+      if (newScale !== scale) {
+        zoomAround(newScale);
+      }
+    } else {
+      // This is a pan/scroll gesture
+      // Calculate how much to move the image
+      // Use deltaX for horizontal movement and deltaY for vertical movement
+      // Adjust sensitivity as needed with the multiplier (0.5 makes it less sensitive)
+      const deltaX = event.deltaX * 0.5;
+      const deltaY = event.deltaY * 0.5;
+
+      // Update position state to move the image
+      setPosition({
+        x: position.x - deltaX / scale,
+        y: position.y - deltaY / scale,
+      });
+    }
   };
 
   useEffect(() => {
@@ -204,7 +305,9 @@ function SVGWrapper() {
   // reset draw status
   const resetDrawStatus = () => {
     dispatch(setDrawStatus({ drawStatus: DRAW_STATUS_TYPES.IDLE }));
-    svgRef.current!.style.cursor = 'crosshair';
+    if (svgRef.current) {
+      svgRef.current.style.cursor = 'crosshair';
+    }
   };
 
   const movingRectangle = (coordinate: Coordinate) => {
@@ -302,17 +405,17 @@ function SVGWrapper() {
           y: parseInt(((event.clientY - CTM.f) / CTM.d).toString(), 10),
         });
       }
-      setDragging(true);
+      setIsDragging(true);
       setIsDraw(false);
     } else if (
       dragStatus === 'NOT_DRAG_IMAGE' &&
       (selShapeType === SHAPE_TYPES.RECTANGLE ||
         selShapeType === SHAPE_TYPES.POLYGON)
     ) {
-      setDragging(false);
+      setIsDragging(false);
       setIsDraw(true);
     } else {
-      setDragging(false);
+      setIsDragging(false);
       setIsDraw(false);
     }
   };
@@ -335,8 +438,8 @@ function SVGWrapper() {
         y: parseInt(((event.clientY - CTM.f) / CTM.d).toString(), 10),
       });
       setPosition(position => ({
-        x: position.x + deltaX,
-        y: position.y + deltaY,
+        x: position.x + deltaX * 1.2,
+        y: position.y + deltaY * 1.2,
       }));
     }
 
@@ -362,12 +465,13 @@ function SVGWrapper() {
     event: MouseEvent<SVGSVGElement, globalThis.MouseEvent>
   ) => {
     if (!isDraw) {
-      setDragging(false);
+      setIsDragging(false);
     }
 
     if (!isLeftMouseClick(event)) return;
 
     if (!isValidCoordinate({ ...mouseCoordinate })) return;
+
     // check dragging
     if (drawStatus === DRAW_STATUS_TYPES.SELECT) {
       dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
@@ -405,7 +509,7 @@ function SVGWrapper() {
     event.stopPropagation();
 
     if (selShapeType === SHAPE_TYPES.MOVE) {
-      setDragging(false);
+      setIsDragging(false);
     }
 
     dispatch(
@@ -474,121 +578,145 @@ function SVGWrapper() {
     dispatch(setShapes({ shapes: shapesCopy }));
   };
 
+  // Format zoom percentage for display
+  const zoomPercentage = Math.round(scale * 100);
+
   return (
-    <div className="svg-wrapper flex items-start justify-end">
+    <div className="svg-wrapper flex flex-col items-start justify-end relative">
       {loading && (
         <div className="loading-animation">
           <Loading />
         </div>
       )}
-      {imageFiles[selDrawImageIndex] && (
-        <svg
-          className="svg-container"
-          ref={svgRef}
-          viewBox={`0 0 ${imageSizes[selDrawImageIndex].width} ${imageSizes[selDrawImageIndex].height}`}
-          onMouseMove={onSVGMouseMove}
-          onMouseUp={onSVGMouseUp}
-          onMouseDown={onSVGMouseDown}
-          style={{ cursor: 'cell' }}
-          transform={`scale(${scale}) translate(${position.x} ${position.y})`}
-        >
-          <image
-            href={imageProps.href}
-            width={imageProps.width}
-            height={imageProps.height}
-            preserveAspectRatio="xMidYMid slice"
-          />
 
-          {currentShape && (
-            <g>
-              <path
-                d={currentShape.d}
-                style={{ ...drawingShapePathStyle } as React.CSSProperties}
-              />
-              {currentShape.paths.map(point => (
-                <circle
-                  key={uuidv4()}
-                  cx={point.x}
-                  cy={point.y}
-                  style={{ ...drawingShapePointStyle }}
-                  r={drawingShapePointStyle.strokeWidth}
-                />
-              ))}
-            </g>
-          )}
-
-          {shapes[selDrawImageIndex] &&
-            Array.isArray(shapes[selDrawImageIndex]) &&
-            shapes[selDrawImageIndex].map((shape, index) =>
-              !shape.visible ? null : (
-                <Tooltip
-                  key={shape.d}
-                  title={shape.label}
-                  placement="top" // Position: top, bottom, left, right
-                  mouseEnterDelay={0} // Delay before showing tooltip
-                  mouseLeaveDelay={0} // Delay before hiding tooltip
-                  trigger="hover" // Can be hover, click, etc
-                  arrow={true} // Show/hide arrow
-                  color="#fff"
-                  styles={{
-                    body: {
-                      color: '#333',
-                      fontSize: '14px',
-                      padding: '8px 12px',
-                    },
-                  }}
-                >
-                  <g>
-                    <path
-                      d={shape.d}
-                      style={
-                        shape.isSelect
-                          ? { ...selShapeStyle }
-                          : { ...shapeStyle }
-                      }
-                      onMouseUp={event => onShapeMouseUp(event, index)}
-                    />
-                  </g>
-                </Tooltip>
-              )
-            )}
-        </svg>
-      )}
       <div
-        style={{
-          display: 'flex',
-          right: '0',
-          flexDirection: 'column',
-          width: '40px',
-          marginRight: '3px',
-        }}
+        ref={svgContainerRef}
+        className="svg-view-container relative w-full h-full overflow-hidden"
+        onWheel={handleWheel}
       >
-        <button
-          onClick={handleZoomIn}
-          style={{
-            position: 'relative',
-            zIndex: '100',
-            fontSize: '20px',
-            border: ' 1px solid grey',
-            marginBottom: '5px',
-            borderRadius: '20%',
-          }}
-        >
-          <FontAwesomeIcon icon={faMagnifyingGlassPlus} />
-        </button>
-        <button
-          onClick={handleZoomOut}
-          style={{
-            position: 'relative',
-            zIndex: '100',
-            fontSize: '20px',
-            border: ' 1px solid grey',
-            borderRadius: '20%',
-          }}
-        >
-          <FontAwesomeIcon icon={faMagnifyingGlassMinus} />
-        </button>
+        {imageFiles[selDrawImageIndex] && (
+          <svg
+            className="svg-container transition-transform"
+            ref={svgRef}
+            viewBox={`0 0 ${imageSizes[selDrawImageIndex].width} ${imageSizes[selDrawImageIndex].height}`}
+            onMouseMove={onSVGMouseMove}
+            onMouseUp={onSVGMouseUp}
+            onMouseDown={onSVGMouseDown}
+            style={{
+              cursor: 'cell',
+              transform: `scale(${scale}) translate(${position.x}px, ${position.y}px)`,
+              transformOrigin: '0 0',
+              transition: isTransitioning
+                ? `transform ${ZOOM_ANIMATION_DURATION}ms ease-out`
+                : 'none',
+            }}
+          >
+            <image
+              href={imageProps.href}
+              width={imageProps.width}
+              height={imageProps.height}
+              preserveAspectRatio="xMidYMid slice"
+            />
+
+            {currentShape && (
+              <g>
+                <path
+                  d={currentShape.d}
+                  style={{ ...drawingShapePathStyle } as React.CSSProperties}
+                />
+                {currentShape.paths.map(point => (
+                  <circle
+                    key={uuidv4()}
+                    cx={point.x}
+                    cy={point.y}
+                    style={{ ...drawingShapePointStyle }}
+                    r={drawingShapePointStyle.strokeWidth}
+                  />
+                ))}
+              </g>
+            )}
+
+            {shapes[selDrawImageIndex] &&
+              Array.isArray(shapes[selDrawImageIndex]) &&
+              shapes[selDrawImageIndex].map((shape, index) =>
+                !shape.visible ? null : (
+                  <Tooltip
+                    key={shape.d}
+                    title={shape.label}
+                    placement="top"
+                    mouseEnterDelay={0}
+                    mouseLeaveDelay={0}
+                    trigger="hover"
+                    arrow={true}
+                    color="#fff"
+                    styles={{
+                      body: {
+                        color: '#333',
+                        fontSize: '14px',
+                        padding: '8px 12px',
+                      },
+                    }}
+                  >
+                    <g>
+                      <path
+                        d={shape.d}
+                        style={
+                          shape.isSelect
+                            ? { ...selShapeStyle }
+                            : { ...shapeStyle }
+                        }
+                        onMouseUp={event => onShapeMouseUp(event, index)}
+                      />
+                    </g>
+                  </Tooltip>
+                )
+              )}
+          </svg>
+        )}
       </div>
+
+      {/* Zoom controls with percentage and reset button */}
+      <div className="zoom-controls absolute right-3 top-3 flex flex-col items-center bg-white bg-opacity-80 p-2 rounded-md shadow-md">
+        <div className="zoom-percentage text-sm font-medium mb-2">
+          {zoomPercentage}%
+        </div>
+
+        <div className="zoom-buttons flex flex-col gap-2">
+          <button
+            onClick={handleZoomIn}
+            className="zoom-button bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
+            title="Zoom In"
+            disabled={scale >= MAX_ZOOM}
+          >
+            <FontAwesomeIcon icon={faMagnifyingGlassPlus} />
+          </button>
+
+          <button
+            onClick={handleReset}
+            className="zoom-button bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
+            title="Reset Zoom"
+          >
+            <FontAwesomeIcon icon={faRotateLeft} />
+          </button>
+
+          <button
+            onClick={handleZoomOut}
+            className="zoom-button bg-gray-100 hover:bg-gray-200 p-2 rounded-md"
+            title="Zoom Out"
+            disabled={scale <= MIN_ZOOM}
+          >
+            <FontAwesomeIcon icon={faMagnifyingGlassMinus} />
+          </button>
+        </div>
+      </div>
+
+      {/* Status indicators */}
+      {isDragging || isDraw ? (
+        <div className="absolute left-3 bottom-3 flex items-center gap-2 bg-white bg-opacity-80 px-3 py-1 rounded-md text-sm">
+          {isDragging && <span className="text-blue-600">Moving</span>}
+          {isDraw && <span className="text-green-600">Drawing</span>}
+        </div>
+      ) : null}
     </div>
   );
 }
