@@ -1,5 +1,5 @@
 import '../scss/TopBar.scss';
-import { ChangeEvent, useEffect, useState } from 'react';
+import { ChangeEvent } from 'react';
 import { message } from 'antd';
 import { Dropdown, Button } from 'antd';
 import JSZip from 'jszip';
@@ -22,8 +22,6 @@ import {
   setSelShapeIndex,
   setSelDrawImageIndex,
   setFullScreen,
-  selectImagesRedux,
-  setImagesRedux,
 } from '@/lib/redux';
 import { ImageType } from '@/types/ImageType';
 
@@ -34,40 +32,10 @@ function TopBar() {
     imageFiles,
     selDrawImageIndex,
     imageSizes,
-    txtFiles,
-    selDrawTxtIndex,
     drawStatus,
     shapes,
     selShapeIndex,
   } = state;
-  const files = useAppSelector(selectImagesRedux);
-
-  useEffect(() => {
-    if (!files || files.length === 0) return;
-
-    const newImageFiles = [...imageFiles, ...files];
-    const newImageSizes = newImageFiles.map((item, index) =>
-      imageSizes[index] ? imageSizes[index] : imageSizeFactory({})
-    );
-    const newShapes = newImageFiles.map((item, index) =>
-      shapes[index] ? shapes[index] : []
-    );
-
-    dispatch(
-      setImageFiles({
-        imageFiles: newImageFiles,
-        selDrawImageIndex: selDrawImageIndex > 0 ? selDrawImageIndex : 0,
-        imageSizes: newImageSizes,
-        drawStatus,
-        shapes: newShapes,
-        selShapeIndex,
-      })
-    );
-
-    const msg =
-      files.length > 1 ? `${files.length} images` : `${files.length} image`;
-    message.success(`Success to load ${msg}.`);
-  }, []);
 
   const onFilesChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;

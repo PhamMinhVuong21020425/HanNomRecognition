@@ -45,7 +45,6 @@ type SetXmlPreviewBoxStatusPayload = {
 
 /* Initial State */
 const initialState: AnnotationState = {
-  mouseCoordinate: { x: 0, y: 0 },
   imageFiles: [],
   selDrawImageIndex: -1,
   selImageIndexes: [],
@@ -77,10 +76,6 @@ export const annotationSlice = createSlice({
   name: 'annotation',
   initialState,
   reducers: {
-    setMouseCoordinate: (state, action) => {
-      state.mouseCoordinate = action.payload.mouseCoordinate;
-    },
-
     setImageFiles: (state, action: PayloadAction<SetImageFilesPayload>) => {
       const {
         imageFiles,
@@ -309,7 +304,6 @@ export const annotationSlice = createSlice({
 });
 
 export const {
-  setMouseCoordinate,
   setImageFiles,
   setSelDrawImageIndex,
   setImageSizes,

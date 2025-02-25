@@ -56,7 +56,6 @@ export type DrawStyle = {
 };
 
 export type AnnotationState = {
-  mouseCoordinate: Coordinate;
   imageFiles: ImageType[];
   selDrawImageIndex: number;
   selImageIndexes: number[];

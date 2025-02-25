@@ -2,6 +2,7 @@ import '../scss/SVGWrapper.scss';
 import { useEffect, useRef, useMemo, useState, MouseEvent } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { cloneDeep } from 'lodash';
+import { Tooltip } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faMagnifyingGlassPlus,
@@ -13,7 +14,6 @@ import {
   getImageSizeFromUrl,
   coordinateFactory,
   getSVGPathD,
-  getShapeXYMaxMin,
   drawStyleFactory,
   shapeFactory,
   imageSizeFactory,
@@ -32,14 +32,13 @@ import {
   setDrawStatus,
   setImageSizes,
   setLabelBoxStatus,
-  setMouseCoordinate,
   setSelShapeIndex,
   setShapes,
   useAppDispatch,
   useAppSelector,
 } from '@/lib/redux';
 
-import {
+import type {
   Coordinate,
   DrawStyle,
 } from '@/lib/redux/slices/annotationSlice/types';
@@ -49,10 +48,13 @@ let pointsY: number[] = [];
 
 function SVGWrapper() {
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const [mouseCoordinate, setMouseCoordinate] = useState<Coordinate>({
+    x: 0,
+    y: 0,
+  });
   const dispatch = useAppDispatch();
   const state = useAppSelector(state => state.annotation);
   const {
-    mouseCoordinate,
     imageFiles,
     selDrawImageIndex,
     imageSizes,
@@ -92,8 +94,6 @@ function SVGWrapper() {
     setScale(scale => scale - 0.1);
   };
   const [loading, setLoading] = useState(false);
-  // is Insert bounding box?
-  const [isInsert, setInsert] = useState(true);
 
   useEffect(() => {
     if (selDrawImageIndex === -1 || imageFiles.length === 0) return;
@@ -170,7 +170,9 @@ function SVGWrapper() {
     };
   }, [imageFiles, selDrawImageIndex, imageSizes]);
 
-  const getMouseCoordinate = (event: { clientX: number; clientY: number }) => {
+  const getMouseCoordinate = (
+    event: MouseEvent<SVGSVGElement, globalThis.MouseEvent>
+  ) => {
     if (!event) return coordinateFactory({ x: 0, y: 0 });
 
     const CTM = svgRef.current!.getScreenCTM();
@@ -196,8 +198,6 @@ function SVGWrapper() {
     const point4 = { x: point3.x, y: point1.y };
 
     currentShapeCopy.paths = [point1, point2, point3, point4, point1];
-    // console.log(currentShapeCopy.paths);
-    // console.log(currentShapeCopy.paths);
     currentShapeCopy.exactPathCount = currentShapeCopy.paths.length - 1;
     currentShapeCopy.d = getSVGPathD(currentShapeCopy.paths, false);
     dispatch(setCurrentShape({ currentShape: currentShapeCopy }));
@@ -267,9 +267,13 @@ function SVGWrapper() {
     }
   };
 
-  const isLeftMouseClick = (event: { button: number }) => event.button === 0;
+  const isLeftMouseClick = (
+    event: MouseEvent<SVGSVGElement | SVGPathElement, globalThis.MouseEvent>
+  ) => event.button === 0;
 
-  const onSVGMouseDown = (event: { clientX: number; clientY: number }) => {
+  const onSVGMouseDown = (
+    event: MouseEvent<SVGSVGElement, globalThis.MouseEvent>
+  ) => {
     if (!svgRef.current) return;
     if (dragStatus === 'DRAG_IMAGE') {
       svgRef.current.style.cursor = 'move';
@@ -288,7 +292,9 @@ function SVGWrapper() {
     }
   };
 
-  const onSVGMouseMove = (event: { clientX: number; clientY: number }) => {
+  const onSVGMouseMove = (
+    event: MouseEvent<SVGSVGElement, globalThis.MouseEvent>
+  ) => {
     if (!svgRef.current) return;
     if (!isDraw && isDragging) {
       const CTM = svgRef.current.getScreenCTM();
@@ -310,7 +316,7 @@ function SVGWrapper() {
     }
 
     const coordinate = getMouseCoordinate(event);
-    dispatch(setMouseCoordinate({ mouseCoordinate: coordinate }));
+    setMouseCoordinate(coordinate);
 
     if ((drawStatus !== DRAW_STATUS_TYPES.DRAWING && !currentShape) || !isDraw)
       return;
@@ -326,7 +332,9 @@ function SVGWrapper() {
     }
   };
 
-  const onSVGMouseUp = (event: any) => {
+  const onSVGMouseUp = (
+    event: MouseEvent<SVGSVGElement, globalThis.MouseEvent>
+  ) => {
     if (!isDraw) {
       setDragging(false);
     }
@@ -390,14 +398,13 @@ function SVGWrapper() {
     //const listShape = [shapeFactoryTest(coordinates[0]), shapeFactoryTest(coordinates[1])];
     const result = listDetections.find(item => {
       let imageWithoutEx = item.image_name.split('.')[0];
-      // console.log(imageWithoutEx);
       let imageNameNew = imageName.split('.')[0];
       return imageWithoutEx === imageNameNew;
     });
 
     const listBoxes = result
       ? result.objects_detection
-          .filter(obj => obj.confidence > 0.3)
+          .filter(obj => obj.confidence > 0.2)
           .map(obj => ({
             coordinates: obj.coordinates,
             name: obj.class,
@@ -502,24 +509,35 @@ function SVGWrapper() {
             Array.isArray(shapes[selDrawImageIndex]) &&
             shapes[selDrawImageIndex].map((shape, index) =>
               !shape.visible ? null : (
-                <g key={shape.d}>
-                  <path
-                    d={shape.d}
-                    style={
-                      shape.isSelect ? { ...selShapeStyle } : { ...shapeStyle }
-                    }
-                    onMouseUp={event => onShapeMouseUp(event, index)}
-                  />
-                  {shape.label && (
-                    <text
-                      x={getShapeXYMaxMin(shape.paths).xmin}
-                      y={getShapeXYMaxMin(shape.paths).ymin}
-                      style={{ ...labelStyle }}
-                    >
-                      {shape.label}
-                    </text>
-                  )}
-                </g>
+                <Tooltip
+                  key={shape.d}
+                  title={shape.label}
+                  placement="top" // Position: top, bottom, left, right
+                  mouseEnterDelay={0} // Delay before showing tooltip
+                  mouseLeaveDelay={0} // Delay before hiding tooltip
+                  trigger="hover" // Can be hover, click, etc
+                  arrow={true} // Show/hide arrow
+                  color="#fff"
+                  styles={{
+                    body: {
+                      color: '#333',
+                      fontSize: '14px',
+                      padding: '8px 12px',
+                    },
+                  }}
+                >
+                  <g>
+                    <path
+                      d={shape.d}
+                      style={
+                        shape.isSelect
+                          ? { ...selShapeStyle }
+                          : { ...shapeStyle }
+                      }
+                      onMouseUp={event => onShapeMouseUp(event, index)}
+                    />
+                  </g>
+                </Tooltip>
               )
             )}
         </svg>

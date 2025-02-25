@@ -65,7 +65,7 @@ function DrawTool() {
     dispatch(deleteAllShapes());
   };
 
-  //normal mouse
+  // normal mouse
   const onNormalMouse = () => {
     dispatch(setNotDragImage());
   };

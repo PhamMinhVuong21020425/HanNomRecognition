@@ -1,5 +1,12 @@
+import { useState, useEffect } from 'react';
 import { Modal, Input } from 'antd';
-import { generateXML, exportXML } from '@/utils/general';
+
+import {
+  fetchFileFromObjectUrl,
+  generateXML,
+  exportXML,
+} from '@/utils/general';
+
 import {
   useAppDispatch,
   useAppSelector,
@@ -11,6 +18,7 @@ const { TextArea } = Input;
 function XMLPreviewBox() {
   const dispatch = useAppDispatch();
   const state = useAppSelector(state => state.annotation);
+  const [xml, setXml] = useState('');
 
   const {
     imageFiles,
@@ -20,12 +28,17 @@ function XMLPreviewBox() {
     xmlPreviewBoxVisible,
   } = state;
 
+  useEffect(() => {
+    if (selPreviewIndex === -1) return;
+    const img = imageFiles[selPreviewIndex];
+    fetchFileFromObjectUrl(img.obj_url, img.name).then(file => {
+      setXml(
+        generateXML(file, imageSizes[selPreviewIndex], shapes[selPreviewIndex])
+      );
+    });
+  }, [selPreviewIndex]);
+
   const onOk = () => {
-    const xml = generateXML(
-      imageFiles[selPreviewIndex],
-      imageSizes[selPreviewIndex],
-      shapes[selPreviewIndex]
-    );
     exportXML(xml, `${imageFiles[selPreviewIndex].name.split('.')[0]}.xml`);
   };
 
@@ -48,16 +61,7 @@ function XMLPreviewBox() {
       onCancel={onCancel}
       okText="Save"
     >
-      {xmlPreviewBoxVisible && (
-        <TextArea
-          rows={10}
-          value={generateXML(
-            imageFiles[selPreviewIndex],
-            imageSizes[selPreviewIndex],
-            shapes[selPreviewIndex]
-          )}
-        />
-      )}
+      {xmlPreviewBoxVisible && <TextArea rows={10} value={xml} />}
     </Modal>
   );
 }
