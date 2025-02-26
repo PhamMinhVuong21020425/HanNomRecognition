@@ -1,7 +1,7 @@
 import '../scss/SVGWrapper.scss';
 import { useEffect, useRef, useMemo, useState, MouseEvent } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, set } from 'lodash';
 import { Tooltip } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -43,6 +43,7 @@ import type {
   Coordinate,
   DrawStyle,
 } from '@/lib/redux/slices/annotationSlice/types';
+import { parse } from 'path';
 
 let pointsX: number[] = [];
 let pointsY: number[] = [];
@@ -98,12 +99,38 @@ function SVGWrapper() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // Track if wheel events
+  const lastWheelTimestamp = useRef(0);
+  const wheelEvents = useRef<
+    Array<{ deltaX: number; deltaY: number; deltaMode: number }>
+  >([]);
+
+  // Setup event listeners for the container
+  useEffect(() => {
+    const container = svgContainerRef.current;
+    if (!container) return;
+
+    // Prevent the default browser behavior for these events
+    const preventDefaultHandler = (event: WheelEvent) => {
+      event.preventDefault();
+    };
+
+    // Add passive: false to ensure preventDefault works
+    container.addEventListener('wheel', preventDefaultHandler, {
+      passive: false,
+    });
+
+    // Clean up event listeners on unmount
+    return () => {
+      container.removeEventListener('wheel', preventDefaultHandler);
+    };
+  }, []);
+
   // Get center point of current view
   const getViewCenter = () => {
     if (!svgRef.current || !svgContainerRef.current) return { x: 0, y: 0 };
 
     const containerRect = svgContainerRef.current.getBoundingClientRect();
-    const svgRect = svgRef.current.getBoundingClientRect();
 
     return {
       x: (containerRect.width / 2 - position.x) / scale,
@@ -153,26 +180,65 @@ function SVGWrapper() {
     }, ZOOM_ANIMATION_DURATION);
   };
 
-  // Handle wheel zoom
-  // const handleWheel = (event: React.WheelEvent) => {
-  //   event.preventDefault();
-  //   // Determine zoom direction
-  //   const delta = event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
-  //   const newScale = Math.max(MIN_ZOOM, Math.min(scale + delta, MAX_ZOOM));
-  //   if (newScale !== scale) {
-  //     zoomAround(newScale);
-  //   }
-  // };
+  // Detect if it's a touchpad gesture by analyzing wheel events
+  const detectTouchpadGesture = (event: React.WheelEvent) => {
+    const now = Date.now();
+    const timeDelta = now - lastWheelTimestamp.current;
 
-  // Handle wheel zoom and pan
+    // Clear old events (older than 200ms)
+    if (timeDelta > 200) {
+      wheelEvents.current = [];
+    }
+
+    // Add current event
+    wheelEvents.current.push({
+      deltaX: event.deltaX,
+      deltaY: event.deltaY,
+      deltaMode: event.deltaMode,
+    });
+
+    // Keep only the last 5 events
+    if (wheelEvents.current.length > 5) {
+      wheelEvents.current.shift();
+    }
+
+    // Update timestamp
+    lastWheelTimestamp.current = now;
+
+    // Analyze events to determine if it's a touchpad gesture
+    // Touchpad events typically have:
+    // 1. Small delta values
+    // 2. High frequency
+    // 3. deltaMode of 0 (pixel-based)
+    let isTouchpad = false;
+
+    if (wheelEvents.current.length >= 3) {
+      const allSmallDeltas = wheelEvents.current.every(
+        e => Math.abs(e.deltaX) < 20 && Math.abs(e.deltaY) < 20
+      );
+
+      const allPixelMode = wheelEvents.current.every(e => e.deltaMode === 0);
+
+      isTouchpad = allSmallDeltas && allPixelMode && timeDelta < 50;
+    }
+
+    // If ctrl key is pressed, it's likely a pinch zoom
+    if (event.ctrlKey || event.metaKey) {
+      isTouchpad = true;
+    }
+
+    return isTouchpad;
+  };
+
+  // Handle wheel event for both zoom and pan
   const handleWheel = (event: React.WheelEvent) => {
-    // Stop propagation to prevent parent elements from scrolling
+    // Immediate prevention of default and propagation
     event.stopPropagation();
 
-    // Prevent default browser scrolling behavior
-    event.preventDefault();
+    // Detect if this is a touchpad gesture
+    const isTouchpad = detectTouchpadGesture(event);
 
-    // Check if it's a pinch-to-zoom gesture (ctrl key is pressed or with multiple touch points)
+    // Handle pinch-to-zoom (ctrl key or meta key pressed)
     if (event.ctrlKey || event.metaKey) {
       // This is a zoom gesture
       // Determine zoom direction - negative deltaY means zoom in, positive means zoom out
@@ -182,18 +248,23 @@ function SVGWrapper() {
       if (newScale !== scale) {
         zoomAround(newScale);
       }
-    } else {
-      // This is a pan/scroll gesture
-      // Calculate how much to move the image
-      // Use deltaX for horizontal movement and deltaY for vertical movement
-      // Adjust sensitivity as needed with the multiplier (0.5 makes it less sensitive)
-      const deltaX = event.deltaX * 0.5;
-      const deltaY = event.deltaY * 0.5;
-
-      // Update position state to move the image
+    }
+    // Handle two-finger scroll/pan on touchpad
+    else if (isTouchpad) {
+      // Adjust sensitivity for touchpad (less movement than scroll wheel)
+      const sensitivity = 1.2;
       setPosition({
-        x: position.x - deltaX / scale,
-        y: position.y - deltaY / scale,
+        x: position.x - (event.deltaX * sensitivity) / scale,
+        y: position.y - (event.deltaY * sensitivity) / scale,
+      });
+    }
+    // Handle regular mouse wheel
+    else {
+      // Higher sensitivity for mouse wheel
+      const sensitivity = 1.5;
+      setPosition({
+        x: position.x - (event.deltaX ? event.deltaX : 0) / scale,
+        y: position.y - (event.deltaY * sensitivity) / scale,
       });
     }
   };
@@ -213,7 +284,6 @@ function SVGWrapper() {
             handleClickPath(imageFiles[selDrawImageIndex].name);
           }
         });
-        setLoading(false);
         dispatch(
           setImageSizes({
             imageSizes: imageSizes.map((item, index) =>
@@ -226,55 +296,47 @@ function SVGWrapper() {
             ) as DrawStyle,
           })
         );
+        handleReset();
+        setLoading(false);
       });
     } catch (error) {
       console.error(error);
     }
   }, [imageFiles, selDrawImageIndex]);
 
-  const isValidCoordinate = ({ x, y }: Coordinate) =>
-    x >= 0 &&
-    x <= imageSizes[selDrawImageIndex].width &&
-    y >= 0 &&
-    y <= imageSizes[selDrawImageIndex].height;
-
   useEffect(() => {
     if (imageFiles.length === 0 || !svgRef.current) return;
-    if (isValidCoordinate({ ...mouseCoordinate })) {
-      switch (selShapeType) {
-        case SHAPE_TYPES.POINTER:
-          svgRef.current.style.cursor = 'default';
-          break;
-        case SHAPE_TYPES.MOVE:
-          svgRef.current.style.cursor = 'move';
-          break;
-        case SHAPE_TYPES.ROTATE:
-          svgRef.current.style.cursor = 'cell';
-          break;
-        case SHAPE_TYPES.RECTANGLE:
-        case SHAPE_TYPES.POLYGON:
-          svgRef.current.style.cursor = 'crosshair';
-          if (currentShape && currentShape.paths.length > 0) {
-            // change cursor when the current point is equal to the first point
-            if (
-              selShapeType === SHAPE_TYPES.POLYGON &&
-              Math.abs(currentShape.paths[0].x - mouseCoordinate.x) <=
-                closePointRegion &&
-              Math.abs(currentShape.paths[0].y - mouseCoordinate.y) <=
-                closePointRegion
-            ) {
-              svgRef.current.style.cursor = 'pointer';
-            } else {
-              svgRef.current.style.cursor = 'crosshair';
-            }
+    switch (selShapeType) {
+      case SHAPE_TYPES.POINTER:
+        svgRef.current.style.cursor = 'default';
+        break;
+      case SHAPE_TYPES.MOVE:
+        svgRef.current.style.cursor = 'move';
+        break;
+      case SHAPE_TYPES.ROTATE:
+        svgRef.current.style.cursor = 'cell';
+        break;
+      case SHAPE_TYPES.RECTANGLE:
+      case SHAPE_TYPES.POLYGON:
+        svgRef.current.style.cursor = 'crosshair';
+        if (currentShape && currentShape.paths.length > 0) {
+          // change cursor when the current point is equal to the first point
+          if (
+            selShapeType === SHAPE_TYPES.POLYGON &&
+            Math.abs(currentShape.paths[0].x - mouseCoordinate.x) <=
+              closePointRegion &&
+            Math.abs(currentShape.paths[0].y - mouseCoordinate.y) <=
+              closePointRegion
+          ) {
+            svgRef.current.style.cursor = 'pointer';
+          } else {
+            svgRef.current.style.cursor = 'crosshair';
           }
-          break;
-        default:
-          svgRef.current.style.cursor = 'default';
-          break;
-      }
-    } else {
-      svgRef.current.style.cursor = 'not-allowed';
+        }
+        break;
+      default:
+        svgRef.current.style.cursor = 'default';
+        break;
     }
   }, [imageFiles, currentShape, selShapeType]);
 
@@ -290,7 +352,7 @@ function SVGWrapper() {
   }, [imageFiles, selDrawImageIndex, imageSizes]);
 
   const getMouseCoordinate = (
-    event: MouseEvent<SVGSVGElement, globalThis.MouseEvent>
+    event: MouseEvent<HTMLDivElement, globalThis.MouseEvent>
   ) => {
     if (!event) return coordinateFactory({ x: 0, y: 0 });
 
@@ -389,22 +451,45 @@ function SVGWrapper() {
   };
 
   const isLeftMouseClick = (
-    event: MouseEvent<SVGSVGElement | SVGPathElement, globalThis.MouseEvent>
+    event: MouseEvent<HTMLDivElement | SVGPathElement, globalThis.MouseEvent>
   ) => event.button === 0;
 
+  const isCoordinateInside = (cordinate: Coordinate, svgRect: DOMRect) => {
+    const x = cordinate.x;
+    const y = cordinate.y;
+
+    const left = Math.max(80, svgRect.left);
+    const right = Math.min(svgRect.right, 1360);
+    const top = Math.max(120, svgRect.top);
+    const bottom = Math.min(svgRect.bottom, 760);
+
+    const isMouseInside = x >= left && x <= right && y >= top && y <= bottom;
+
+    return isMouseInside;
+  };
+
   const onSVGMouseDown = (
-    event: MouseEvent<SVGSVGElement, globalThis.MouseEvent>
+    event: MouseEvent<HTMLDivElement, globalThis.MouseEvent>
   ) => {
     if (!svgRef.current) return;
-    if (dragStatus === 'DRAG_IMAGE') {
-      if (selShapeType === SHAPE_TYPES.MOVE) {
-        const CTM = svgRef.current.getScreenCTM();
-        if (!CTM) return;
-        setPrevPosition({
-          x: parseInt(((event.clientX - CTM.e) / CTM.a).toString(), 10),
-          y: parseInt(((event.clientY - CTM.f) / CTM.d).toString(), 10),
-        });
+    if (dragStatus === 'DRAG_IMAGE' && selShapeType === SHAPE_TYPES.MOVE) {
+      const CTM = svgRef.current.getScreenCTM();
+      if (!CTM || !svgRef.current) return;
+      const svgRect = svgRef.current.getBoundingClientRect();
+
+      const x = event.clientX;
+      const y = event.clientY;
+
+      if (!isCoordinateInside({ x, y }, svgRect)) {
+        setIsDragging(false);
+        return;
       }
+
+      setPrevPosition({
+        x: parseInt(((event.clientX - CTM.e) / CTM.a).toString(), 10),
+        y: parseInt(((event.clientY - CTM.f) / CTM.d).toString(), 10),
+      });
+
       setIsDragging(true);
       setIsDraw(false);
     } else if (
@@ -421,39 +506,57 @@ function SVGWrapper() {
   };
 
   const onSVGMouseMove = (
-    event: MouseEvent<SVGSVGElement, globalThis.MouseEvent>
+    event: MouseEvent<HTMLDivElement, globalThis.MouseEvent>
   ) => {
     if (!svgRef.current) return;
-    if (!isDraw && isDragging) {
-      const CTM = svgRef.current.getScreenCTM();
-      if (!CTM) return;
-      const deltaX =
-        parseInt(((event.clientX - CTM.e) / CTM.a).toString(), 10) -
-        prevPosition.x;
-      const deltaY =
-        parseInt(((event.clientY - CTM.f) / CTM.d).toString(), 10) -
-        prevPosition.y;
-      setPrevPosition({
-        x: parseInt(((event.clientX - CTM.e) / CTM.a).toString(), 10),
-        y: parseInt(((event.clientY - CTM.f) / CTM.d).toString(), 10),
-      });
-      setPosition(position => ({
-        x: position.x + deltaX * 1.2,
-        y: position.y + deltaY * 1.2,
-      }));
-    }
 
     const coordinate = getMouseCoordinate(event);
     setMouseCoordinate(coordinate);
 
-    if ((drawStatus !== DRAW_STATUS_TYPES.DRAWING && !currentShape) || !isDraw)
-      return;
-
     switch (selShapeType) {
+      case SHAPE_TYPES.MOVE:
+        if (!isDraw && isDragging) {
+          const svgRect = svgRef.current.getBoundingClientRect();
+
+          const x = event.clientX;
+          const y = event.clientY;
+
+          if (!isCoordinateInside({ x, y }, svgRect)) {
+            setIsDragging(false);
+            return;
+          }
+
+          const CTM = svgRef.current.getScreenCTM();
+          if (!CTM) return;
+
+          const deltaX =
+            parseInt(((event.clientX - CTM.e) / CTM.a).toString(), 10) -
+            prevPosition.x;
+
+          const deltaY =
+            parseInt(((event.clientY - CTM.f) / CTM.d).toString(), 10) -
+            prevPosition.y;
+
+          setPosition(position => ({
+            x: position.x + (deltaX * 0.2) / scale,
+            y: position.y + (deltaY * 0.2) / scale,
+          }));
+        }
+        break;
       case SHAPE_TYPES.RECTANGLE:
+        if (
+          (drawStatus !== DRAW_STATUS_TYPES.DRAWING && !currentShape) ||
+          !isDraw
+        )
+          return;
         movingRectangle(coordinate);
         break;
       case SHAPE_TYPES.POLYGON:
+        if (
+          (drawStatus !== DRAW_STATUS_TYPES.DRAWING && !currentShape) ||
+          !isDraw
+        )
+          return;
         movingPolygon(coordinate);
         break;
       default:
@@ -462,15 +565,20 @@ function SVGWrapper() {
   };
 
   const onSVGMouseUp = (
-    event: MouseEvent<SVGSVGElement, globalThis.MouseEvent>
+    event: MouseEvent<HTMLDivElement, globalThis.MouseEvent>
   ) => {
-    if (!isDraw) {
-      setIsDragging(false);
-    }
+    setIsDragging(false);
 
     if (!isLeftMouseClick(event)) return;
 
-    if (!isValidCoordinate({ ...mouseCoordinate })) return;
+    if (!svgRef.current) return;
+    const svgRect = svgRef.current.getBoundingClientRect();
+    const x = event.clientX;
+    const y = event.clientY;
+    if (!isCoordinateInside({ x, y }, svgRect)) {
+      setIsDragging(false);
+      return;
+    }
 
     // check dragging
     if (drawStatus === DRAW_STATUS_TYPES.SELECT) {
@@ -593,22 +701,24 @@ function SVGWrapper() {
         ref={svgContainerRef}
         className="svg-view-container relative w-full h-full overflow-hidden"
         onWheel={handleWheel}
+        onMouseMove={onSVGMouseMove}
+        onMouseUp={onSVGMouseUp}
+        onMouseDown={onSVGMouseDown}
+        style={{ touchAction: 'none' }} // Disable default touch actions
       >
         {imageFiles[selDrawImageIndex] && (
           <svg
             className="svg-container transition-transform"
             ref={svgRef}
             viewBox={`0 0 ${imageSizes[selDrawImageIndex].width} ${imageSizes[selDrawImageIndex].height}`}
-            onMouseMove={onSVGMouseMove}
-            onMouseUp={onSVGMouseUp}
-            onMouseDown={onSVGMouseDown}
             style={{
-              cursor: 'cell',
+              cursor: 'default',
               transform: `scale(${scale}) translate(${position.x}px, ${position.y}px)`,
               transformOrigin: '0 0',
               transition: isTransitioning
                 ? `transform ${ZOOM_ANIMATION_DURATION}ms ease-out`
                 : 'none',
+              willChange: 'transform', // Hint for browser optimization
             }}
           >
             <image
