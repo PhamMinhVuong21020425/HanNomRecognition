@@ -101,9 +101,10 @@ function ImportImage() {
     e.preventDefault();
     setIsDragging(false);
     const files = Array.from(e.dataTransfer.files);
-    const imageFiles = files.filter(file =>
-      IMAGE_TYPES.some(type => file.type.includes(type))
+    const imageFiles = files.map(
+      file => new File([file], `${new Date().getTime()}$$${file.name}`)
     );
+
     setImages([...images, ...imageFiles]);
 
     const newPreviews = imageFiles.map(file => {
@@ -119,9 +120,10 @@ function ImportImage() {
 
     setIsLoading(true);
 
-    const newFiles = Array.from(files).filter(file =>
-      IMAGE_TYPES.some(type => file.type.includes(type))
+    const newFiles = Array.from(files).map(
+      file => new File([file], `${new Date().getTime()}$$${file.name}`)
     );
+
     setImages([...images, ...newFiles]);
 
     const newPreviews = newFiles.map(file => {

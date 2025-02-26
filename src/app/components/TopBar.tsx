@@ -41,8 +41,8 @@ function TopBar() {
     const files = event.target.files;
     if (!files) return;
 
-    const newFiles = Array.from(files).filter(file =>
-      IMAGE_TYPES.some(type => file.type.includes(type))
+    const newFiles = Array.from(files).map(
+      file => new File([file], `${new Date().getTime()}$$${file.name}`)
     );
 
     const newImagesState: ImageType[] = [];
