@@ -21,11 +21,9 @@ export const LABEL_STATUS_TYPES = {
 };
 
 export const SHAPE_TYPES = {
+  POINTER: 'pointer',
+  MOVE: 'move',
+  ROTATE: 'rotate',
   RECTANGLE: 'rectangle',
   POLYGON: 'polygon',
 };
-
-export const SHAPE_TYPE_OPTIONS = [
-  { value: SHAPE_TYPES.RECTANGLE, label: 'Rectangle' },
-  { value: SHAPE_TYPES.POLYGON, label: 'Polygon' },
-];

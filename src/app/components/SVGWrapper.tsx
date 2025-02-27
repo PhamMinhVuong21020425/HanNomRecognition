@@ -48,6 +48,7 @@ let pointsY: number[] = [];
 
 function SVGWrapper() {
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const [loading, setLoading] = useState(false);
   const [mouseCoordinate, setMouseCoordinate] = useState<Coordinate>({
     x: 0,
     y: 0,
@@ -79,21 +80,22 @@ function SVGWrapper() {
 
   const listDetections = useAppSelector(selectDetections);
 
-  //dragging
+  // dragging
   const [isDraw, setIsDraw] = useState(false);
   const [isDragging, setDragging] = useState(false);
   const [prevPosition, setPrevPosition] = useState({ x: 0, y: 0 });
 
-  //zoom images
+  // zoom images
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+
   const handleZoomIn = () => {
     setScale(scale => scale + 0.1);
   };
+
   const handleZoomOut = () => {
     setScale(scale => scale - 0.1);
   };
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (selDrawImageIndex === -1 || imageFiles.length === 0) return;
@@ -138,26 +140,42 @@ function SVGWrapper() {
   useEffect(() => {
     if (imageFiles.length === 0 || !svgRef.current) return;
     if (isValidCoordinate({ ...mouseCoordinate })) {
-      svgRef.current.style.cursor = 'crosshair';
-      if (!isDraw) svgRef.current.style.cursor = 'pointer';
-      if (currentShape && currentShape.paths.length > 0) {
-        // change cursor when the current point is equal to the first point
-        if (
-          selShapeType === SHAPE_TYPES.POLYGON &&
-          Math.abs(currentShape.paths[0].x - mouseCoordinate.x) <=
-            closePointRegion &&
-          Math.abs(currentShape.paths[0].y - mouseCoordinate.y) <=
-            closePointRegion
-        ) {
-          svgRef.current.style.cursor = 'pointer';
-        } else {
+      switch (selShapeType) {
+        case SHAPE_TYPES.POINTER:
+          svgRef.current.style.cursor = 'default';
+          break;
+        case SHAPE_TYPES.MOVE:
+          svgRef.current.style.cursor = 'move';
+          break;
+        case SHAPE_TYPES.ROTATE:
+          svgRef.current.style.cursor = 'cell';
+          break;
+        case SHAPE_TYPES.RECTANGLE:
+        case SHAPE_TYPES.POLYGON:
           svgRef.current.style.cursor = 'crosshair';
-        }
+          if (currentShape && currentShape.paths.length > 0) {
+            // change cursor when the current point is equal to the first point
+            if (
+              selShapeType === SHAPE_TYPES.POLYGON &&
+              Math.abs(currentShape.paths[0].x - mouseCoordinate.x) <=
+                closePointRegion &&
+              Math.abs(currentShape.paths[0].y - mouseCoordinate.y) <=
+                closePointRegion
+            ) {
+              svgRef.current.style.cursor = 'pointer';
+            } else {
+              svgRef.current.style.cursor = 'crosshair';
+            }
+          }
+          break;
+        default:
+          svgRef.current.style.cursor = 'default';
+          break;
       }
     } else {
       svgRef.current.style.cursor = 'not-allowed';
     }
-  }, [imageFiles, currentShape]);
+  }, [imageFiles, currentShape, selShapeType]);
 
   const imageProps = useMemo(() => {
     if (selDrawImageIndex === -1) {
@@ -276,19 +294,26 @@ function SVGWrapper() {
   ) => {
     if (!svgRef.current) return;
     if (dragStatus === 'DRAG_IMAGE') {
-      svgRef.current.style.cursor = 'move';
-      const CTM = svgRef.current.getScreenCTM();
-      if (!CTM) return;
-      setPrevPosition({
-        x: parseInt(((event.clientX - CTM.e) / CTM.a).toString(), 10),
-        y: parseInt(((event.clientY - CTM.f) / CTM.d).toString(), 10),
-      });
+      if (selShapeType === SHAPE_TYPES.MOVE) {
+        const CTM = svgRef.current.getScreenCTM();
+        if (!CTM) return;
+        setPrevPosition({
+          x: parseInt(((event.clientX - CTM.e) / CTM.a).toString(), 10),
+          y: parseInt(((event.clientY - CTM.f) / CTM.d).toString(), 10),
+        });
+      }
       setDragging(true);
       setIsDraw(false);
-    } else if (dragStatus === 'NOT_DRAG_IMAGE') {
-      svgRef.current.style.cursor = 'pointer';
+    } else if (
+      dragStatus === 'NOT_DRAG_IMAGE' &&
+      (selShapeType === SHAPE_TYPES.RECTANGLE ||
+        selShapeType === SHAPE_TYPES.POLYGON)
+    ) {
       setDragging(false);
       setIsDraw(true);
+    } else {
+      setDragging(false);
+      setIsDraw(false);
     }
   };
 
@@ -329,6 +354,7 @@ function SVGWrapper() {
         movingPolygon(coordinate);
         break;
       default:
+        break;
     }
   };
 
@@ -363,6 +389,7 @@ function SVGWrapper() {
           drawPolygonPoint();
           break;
         default:
+          break;
       }
     }
   };
@@ -376,22 +403,15 @@ function SVGWrapper() {
     if (drawStatus === DRAW_STATUS_TYPES.DRAWING) return;
 
     event.stopPropagation();
+
+    if (selShapeType === SHAPE_TYPES.MOVE) {
+      setDragging(false);
+    }
+
     dispatch(
       setSelShapeIndex({ selShapeIndex: index === selShapeIndex ? 0 : index })
     );
   };
-
-  // const createPathFromPoints = (points) => {
-  //     let path = '';
-  //     points.forEach((point, index) => {
-  //         const command = index === 0 ? 'M' : 'L';
-  //         path += `${command} ${point.x} ${point.y} `;
-  //     });
-  //     // Đóng path
-  //     path += 'Z';
-
-  //     return path;
-  // };
 
   const handleClickPath = (imageName: string) => {
     // danh sách tất cả các shapes đang có, phải kiểu dữ liệu mảng
@@ -431,14 +451,6 @@ function SVGWrapper() {
 
     const shapesCopy = cloneDeep(shapes);
 
-    // for (var i = 0; i < listShape.length; i++) {
-    //     let currentShapeCopy = cloneDeep(listShape[i]);
-    //     currentShapeCopy.paths.pop();
-    //     currentShapeCopy.d = getSVGPathD(currentShapeCopy.paths, true);
-    //     currentShapeCopy.label = listLabel[i].name;
-    //     shapesCopy[selDrawImageIndex] = [...shapesCopy[selDrawImageIndex], currentShapeCopy];
-    // }
-
     if (
       shapesCopy[selDrawImageIndex] &&
       shapesCopy[selDrawImageIndex].length > 0
@@ -477,7 +489,7 @@ function SVGWrapper() {
           onMouseMove={onSVGMouseMove}
           onMouseUp={onSVGMouseUp}
           onMouseDown={onSVGMouseDown}
-          style={{ cursor: 'move' }}
+          style={{ cursor: 'cell' }}
           transform={`scale(${scale}) translate(${position.x} ${position.y})`}
         >
           <image
