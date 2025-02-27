@@ -620,7 +620,7 @@ function SVGWrapper() {
     }
 
     dispatch(
-      setSelShapeIndex({ selShapeIndex: index === selShapeIndex ? 0 : index })
+      setSelShapeIndex({ selShapeIndex: index === selShapeIndex ? -1 : index })
     );
   };
 
@@ -642,7 +642,6 @@ function SVGWrapper() {
           }))
       : [];
 
-    //console.log(list[0].coordinate);
     // let listShape = listObject
     //     .filter((obj) => obj.image_name === imageName)
     //     .map((obj) => shapeFactoryTest(obj.coordinate));
@@ -761,8 +760,8 @@ function SVGWrapper() {
                     styles={{
                       body: {
                         color: '#333',
-                        fontSize: '14px',
-                        padding: '8px 12px',
+                        fontSize: '22px',
+                        padding: '8px 16px',
                       },
                     }}
                   >
