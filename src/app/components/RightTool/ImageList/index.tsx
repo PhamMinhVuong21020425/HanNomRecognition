@@ -9,8 +9,8 @@ function ImageList() {
   return (
     <Row justify="start" style={{ overflow: 'auto' }}>
       {imageFiles.map((item, index) => (
-        <Col key={`${item.name}_${new Date().getTime()}`} xs={24}>
-          <ImageItem index={index} name={item.name} />
+        <Col key={item.name} xs={24}>
+          <ImageItem index={index} name={`${item.name.split('$$').pop()}`} />
         </Col>
       ))}
     </Row>

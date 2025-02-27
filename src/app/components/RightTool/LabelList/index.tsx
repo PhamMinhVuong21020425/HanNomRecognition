@@ -7,7 +7,7 @@ function LabelList() {
   const { selDrawImageIndex, shapes } = state;
 
   return (
-    <Row className="max-h-screen" justify="start" style={{ overflow: 'auto' }}>
+    <Row className="max-h-[520px]" justify="start" style={{ overflow: 'auto' }}>
       {shapes[selDrawImageIndex] &&
         Array.isArray(shapes[selDrawImageIndex]) &&
         shapes[selDrawImageIndex].map((item, index) => (

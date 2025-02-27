@@ -30,13 +30,20 @@ function FileImport() {
   } = state;
 
   const onFilesChange = (event: { target: { files: any } }) => {
-    // only allow image file
-    const files = [...event.target.files].filter(
+    const files = [...event.target.files].map(
       file =>
-        IMAGE_TYPES.indexOf(getURLExtension(file.name).toLowerCase()) !== -1
+        new File([file], `${new Date().getTime()}$$${file.name}`, {
+          type: file.type,
+        })
     );
+
     if (files.length === 0) return;
-    const newImageFiles = [...imageFiles, ...files];
+    const newFiles = files.map(file => {
+      const obj_url = URL.createObjectURL(file);
+      return { obj_url, name: file.name };
+    });
+
+    const newImageFiles = [...imageFiles, ...newFiles];
     const newImageSizes = newImageFiles.map((item, index) =>
       imageSizes[index] ? imageSizes[index] : imageSizeFactory({})
     );
