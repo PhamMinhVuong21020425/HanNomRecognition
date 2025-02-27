@@ -40,7 +40,9 @@ function AnnotationTool() {
               md={1}
               style={{ maxHeight: '100%', overflow: 'hidden' }}
             >
-              <LeftToolbar />
+              <div className="inner-left-tool">
+                <LeftToolbar />
+              </div>
             </Col>
             <Col className="main-tool" xs={24} md={19} style={{}}>
               <Row justify="center" style={{ height: '100%' }}>
