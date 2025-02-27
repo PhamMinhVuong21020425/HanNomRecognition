@@ -96,21 +96,16 @@ function DrawTool() {
     if (shapeType === selShapeType) return;
     dispatch(setSelShapeType({ selShapeType: shapeType }));
     switch (shapeType) {
-      case 'pointer':
-        dispatch(setNotDragImage());
-        break;
       case 'move':
         dispatch(setDragImage());
         break;
+      case 'pointer':
       case 'rotate':
-        dispatch(setNotDragImage());
-        break;
       case 'polygon':
       case 'rectangle':
-        dispatch(setNotDragImage());
-        break;
       default:
         dispatch(setNotDragImage());
+        onResetClick();
         break;
     }
   };
@@ -143,9 +138,9 @@ function DrawTool() {
       className="draw-tool-container"
       style={{
         backgroundColor: '#ffffff',
-        borderRadius: '12px',
-        padding: '16px 8px',
         width: '70px',
+        padding: '16px 0px',
+        borderRadius: '6px',
       }}
     >
       <Row justify="center" gutter={[0, 12]}>

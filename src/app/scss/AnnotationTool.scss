@@ -17,37 +17,48 @@
   cursor: pointer;
 }
 
-@media only screen and (max-width: 739px) {
-  .tool-container {
-    height: 100vh !important;
-    .left-tool {
-      display: none;
+.tool-container {
+  height: 100vh !important;
+  display: flex;
+  .left-tool {
+    height: 100%;
+    z-index: 1000;
+    .inner-left-tool {
+      position: fixed;
+      top: 200;
+      left: 0;
+      padding: 10px 5px;
     }
-    .main-tool {
-      .center-tool {
-        height: 90% !important;
-      }
+  }
+  .main-tool {
+    height: 100%;
+    .center-tool {
+      height: 100%;
+      overflow-y: auto;
+      padding: 10px;
     }
+  }
+  .right-tool {
+    height: 100%;
+    padding: 10px 0;
+    overflow-y: auto;
   }
 }
 
-@media only screen and (max-width: 1023px) and (min-width: 740px) {
+@media only screen and (max-width: 1038px) {
   .tool-container {
-    display: flex;
-    flex-direction: column !important;
+    position: relative;
     height: 100vh !important;
     .left-tool {
-      max-width: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1000;
     }
     .main-tool {
-      max-width: 100%;
-      width: 100%;
       .center-tool {
         height: 90% !important;
       }
-    }
-    .right-tool {
-      max-width: 100%;
     }
   }
 }
