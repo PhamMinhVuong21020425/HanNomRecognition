@@ -11,24 +11,9 @@ import TopBar from '../components/TopBar';
 import ToolHeader from '../components/ToolHeader';
 import Footer from '../components/Footer';
 import { getIntl } from '@/utils/i18n';
-import { useAppDispatch, useAppSelector, selectLanguage } from '@/lib/redux';
+import { useAppSelector, selectLanguage } from '@/lib/redux';
 
-type AnnotationToolProps = {
-  labelTypes: string[];
-  closePointRegion: number;
-};
-
-function AnnotationTool(props: AnnotationToolProps) {
-  const { labelTypes, closePointRegion } = props;
-
-  const onContextMenu = (event: { preventDefault: () => void }) => {
-    event.preventDefault();
-  };
-
-  const dispatch = useAppDispatch();
-  const state = useAppSelector(state => state.annotation);
-  const { fullScreen } = state;
-
+function AnnotationTool() {
   const locale = useAppSelector(selectLanguage);
   const intl = getIntl(locale);
 
@@ -36,19 +21,8 @@ function AnnotationTool(props: AnnotationToolProps) {
     document.title = intl.formatMessage({
       id: 'metadata.annotation-tool.title',
     });
-
-    document.addEventListener('contextmenu', onContextMenu);
-
-    return () => {
-      document.removeEventListener('contextmenu', onContextMenu);
-    };
   }, [locale]);
 
-  useEffect(() => {
-    if (fullScreen === 'FULL_SCREEN') {
-      console.log('fullscreen');
-    }
-  });
   return (
     <div>
       <Row className="mb-24" justify="center" style={{ height: '100%' }}>
@@ -77,9 +51,9 @@ function AnnotationTool(props: AnnotationToolProps) {
                 >
                   <SVGWrapper />
                 </Col>
-                <Col xs={24} style={{ height: '30px' }}>
+                {/* <Col xs={24} style={{ height: '30px' }}>
                   Status
-                </Col>
+                </Col> */}
               </Row>
             </Col>
             <Col

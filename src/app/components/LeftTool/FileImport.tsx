@@ -6,6 +6,7 @@ import {
   imageSizeFactory,
   generateXML,
   exportZip,
+  fetchFileFromObjectUrl,
 } from '@/utils/general';
 import {
   setImageFiles,
@@ -65,7 +66,7 @@ function FileImport() {
     if (!imageFiles.length || imageFiles.length < 2) return;
     let index = selDrawImageIndex + 1;
     if (index >= imageFiles.length) index = 0;
-    dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     dispatch(setSelDrawImageIndex({ selDrawImageIndex: index }));
   };
 
@@ -73,19 +74,24 @@ function FileImport() {
     if (!imageFiles.length || imageFiles.length < 2) return;
     let index = selDrawImageIndex - 1;
     if (index < 0) index = imageFiles.length - 1;
-    dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     dispatch(setSelDrawImageIndex({ selDrawImageIndex: index }));
   };
 
-  const onSaveClick = () => {
+  const onSaveClick = async () => {
     if (imageFiles.length === 0) {
       message.info('No images are loaded.');
       return;
     }
-    const xmls = imageFiles.map((file, index) =>
+    const files = [];
+    for (const img of imageFiles) {
+      const file = await fetchFileFromObjectUrl(img.obj_url, img.name);
+      files.push(file);
+    }
+    const xmls = files.map((file, index) =>
       generateXML(file, imageSizes[index], shapes[index])
     );
-    exportZip(imageFiles, xmls, 'YOLO');
+    exportZip(files, xmls, 'YOLO');
   };
 
   return (

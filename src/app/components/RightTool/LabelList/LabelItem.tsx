@@ -31,7 +31,7 @@ function LabelItem(props: LabelItemProps) {
 
   const onItemClick = () => {
     dispatch(
-      setSelShapeIndex({ selShapeIndex: index === selShapeIndex ? 0 : index })
+      setSelShapeIndex({ selShapeIndex: index === selShapeIndex ? -1 : index })
     );
   };
 
@@ -41,7 +41,7 @@ function LabelItem(props: LabelItemProps) {
       !shapesCopy[selDrawImageIndex][index].visible;
     dispatch(setShapes({ shapes: shapesCopy }));
     if (index === selShapeIndex) {
-      dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+      dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     }
   };
 
@@ -62,7 +62,7 @@ function LabelItem(props: LabelItemProps) {
     shapesCopy[selDrawImageIndex].splice(index, 1);
     dispatch(setShapes({ shapes: shapesCopy }));
     if (index === selShapeIndex) {
-      dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+      dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     } else if (index < selShapeIndex) {
       dispatch(setSelShapeIndex({ selShapeIndex: selShapeIndex - 1 }));
     }

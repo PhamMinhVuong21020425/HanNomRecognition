@@ -63,7 +63,7 @@ function LabelBox() {
         labelBoxStatus: LABEL_STATUS_TYPES.IDLE,
       })
     );
-    dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     if (!new Set(labelTypes).has(selLabelType)) {
       dispatch(setLabelTypes({ labelTypes: [selLabelType, ...labelTypes] }));
     }
@@ -78,7 +78,7 @@ function LabelBox() {
         labelBoxStatus: LABEL_STATUS_TYPES.IDLE,
       })
     );
-    dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
   };
 
   const onMouseOver = () => {

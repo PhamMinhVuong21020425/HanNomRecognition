@@ -65,7 +65,7 @@ function DrawTool() {
     dispatch(deleteAllShapes());
   };
 
-  //normal mouse
+  // normal mouse
   const onNormalMouse = () => {
     dispatch(setNotDragImage());
   };
@@ -199,7 +199,7 @@ function DrawTool() {
         <Button
           type="text"
           onClick={onClearSelShapeClick}
-          disabled={selShapeIndex === null}
+          disabled={selShapeIndex === -1}
           style={{ textAlign: 'center' }}
         >
           <span>

@@ -1,5 +1,5 @@
 import '@/app/scss/ImageItem.scss';
-import { Row, Col, Checkbox, Space, Button } from 'antd';
+import { Row, Col, Checkbox, Space, Button, CheckboxChangeEvent } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { DRAW_STATUS_TYPES } from '@/constants';
 import {
@@ -31,7 +31,7 @@ function ImageItem(props: ImageItemProps) {
     selShapeIndex,
   } = state;
 
-  const onCheckChange = (event: { target: { checked: boolean } }) => {
+  const onCheckChange = (event: CheckboxChangeEvent) => {
     const set = new Set([...selImageIndexes]);
     if (event.target.checked) set.add(fileIndex);
     else set.delete(fileIndex);
@@ -39,7 +39,7 @@ function ImageItem(props: ImageItemProps) {
   };
 
   const onItemClick = () => {
-    dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     dispatch(setSelDrawImageIndex({ selDrawImageIndex: fileIndex }));
   };
 
@@ -53,12 +53,13 @@ function ImageItem(props: ImageItemProps) {
   };
 
   const onItemDeleteClick = () => {
+    URL.revokeObjectURL(imageFiles[fileIndex].obj_url);
     const newImageFiles = imageFiles.filter(
       (item, index) => index !== fileIndex
     );
     let newSelDrawImageIndex = selDrawImageIndex;
     if (newImageFiles.length === 0) {
-      newSelDrawImageIndex = 0;
+      newSelDrawImageIndex = -1;
     } else if (fileIndex <= selDrawImageIndex && selDrawImageIndex !== 0) {
       newSelDrawImageIndex = selDrawImageIndex - 1;
     }
@@ -70,7 +71,7 @@ function ImageItem(props: ImageItemProps) {
         drawStatus:
           fileIndex === selDrawImageIndex ? DRAW_STATUS_TYPES.IDLE : drawStatus,
         shapes: shapes.filter((item, index) => index !== fileIndex),
-        selShapeIndex: fileIndex === selDrawImageIndex ? 0 : selShapeIndex,
+        selShapeIndex: fileIndex === selDrawImageIndex ? -1 : selShapeIndex,
       })
     );
   };
@@ -92,7 +93,9 @@ function ImageItem(props: ImageItemProps) {
             color: fileIndex === selDrawImageIndex ? '#ff4d4f' : '#000000d9',
           }}
         >
-          {name}
+          <span className="hover:text-blue-600">
+            ({fileIndex + 1}) {name}
+          </span>
         </div>
       </Col>
       <Col xs={6} style={{ textAlign: 'end' }}>

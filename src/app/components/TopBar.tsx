@@ -1,10 +1,8 @@
 import '../scss/TopBar.scss';
-import { useEffect, useState } from 'react';
+import { ChangeEvent } from 'react';
 import { message } from 'antd';
 import { Dropdown, Button } from 'antd';
 import JSZip from 'jszip';
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
 
 import { ANNOTATION_TYPES, IMAGE_TYPES } from '@/constants';
 
@@ -14,6 +12,7 @@ import {
   generateCoco,
   exportZip,
   generateYolo,
+  fetchFileFromObjectUrl,
 } from '@/utils/general';
 
 import {
@@ -24,6 +23,7 @@ import {
   setSelDrawImageIndex,
   setFullScreen,
 } from '@/lib/redux';
+import { ImageType } from '@/types/ImageType';
 
 function TopBar() {
   const dispatch = useAppDispatch();
@@ -32,78 +32,39 @@ function TopBar() {
     imageFiles,
     selDrawImageIndex,
     imageSizes,
-    txtFiles,
-    selDrawTxtIndex,
     drawStatus,
     shapes,
     selShapeIndex,
   } = state;
-  const router = useRouter();
-  const [backend, setBackend] = useState('');
-  // useEffect(() => {
-  //   // if access route not properly
-  //   // if (!prop) {
-  //   //     router.push('/');
-  //   // }
 
-  //   // only allow image file
-  //   if (!prop) return;
-  //   const files = [...prop].filter(
-  //     file =>
-  //       IMAGE_TYPES.indexOf(getURLExtension(file.name).toLowerCase()) !== -1
-  //   );
-  //   if (files.length === 0) return;
+  const onFilesChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
 
-  //   const newImageFiles = [...imageFiles, ...files];
-  //   const newImageSizes = newImageFiles.map((item, index) =>
-  //     imageSizes[index] ? imageSizes[index] : imageSizeFactory({})
-  //   );
-  //   const newShapes = newImageFiles.map((item, index) =>
-  //     shapes[index] ? shapes[index] : []
-  //   );
-
-  //   dispatch(
-  //     setImageFiles({
-  //       imageFiles: newImageFiles,
-  //       selDrawImageIndex: imageFiles.length ? selDrawImageIndex : 0,
-  //       imageSizes: newImageSizes,
-  //       drawStatus,
-  //       shapes: newShapes,
-  //       selShapeIndex,
-  //     })
-  //   );
-  //   const msg =
-  //     files.length > 1 ? `${files.length} images` : `${files.length} image`;
-  //   message.success(`Success to load ${msg}.`);
-  // }, []);
-
-  let listImage = [];
-  let data: any = [];
-  const onFilesChange = async (event: { target: { files: any } }) => {
-    // only allow image file
-    let abc = event.target.files;
-    const formData = new FormData();
-    for (let i = 0; i < abc.length; i++) {
-      formData.append('file', abc[i]);
-      formData.append('upload_preset', 'ocrNom');
-
-      let response = await axios.post(
-        'https://api.cloudinary.com/v1_1/dm3pvrs73/image/upload',
-        formData
-      );
-      console.log(response.data.secure_url);
-      listImage.push(response.data.secure_url);
-    }
-    data = await axios.post(backend + '/api/detect', {
-      link: listImage,
-    });
-    const files = [...event.target.files].filter(
-      file =>
-        IMAGE_TYPES.indexOf(getURLExtension(file.name).toLowerCase()) !== -1
+    const newFiles = Array.from(files).filter(file =>
+      IMAGE_TYPES.some(type => file.type.includes(type))
     );
-    if (files.length === 0) return;
 
-    const newImageFiles = [...imageFiles, ...files];
+    const newImagesState: ImageType[] = [];
+
+    const formData = new FormData();
+    newFiles.forEach(image => {
+      formData.append('files', image);
+      newImagesState.push({
+        obj_url: URL.createObjectURL(image),
+        name: image.name,
+      });
+    });
+
+    // const response = await axios.post(
+    //   'http://localhost:5000/api/detect',
+    //   formData,
+    //   {
+    //     headers: { 'Content-Type': 'multipart/form-data' },
+    //   }
+    // );
+
+    const newImageFiles = [...imageFiles, ...newImagesState];
     const newImageSizes = newImageFiles.map((item, index) =>
       imageSizes[index] ? imageSizes[index] : imageSizeFactory({})
     );
@@ -113,7 +74,7 @@ function TopBar() {
     dispatch(
       setImageFiles({
         imageFiles: newImageFiles,
-        selDrawImageIndex: imageFiles.length ? selDrawImageIndex : 0,
+        selDrawImageIndex: selDrawImageIndex > 0 ? selDrawImageIndex : 0,
         imageSizes: newImageSizes,
         drawStatus,
         shapes: newShapes,
@@ -124,7 +85,9 @@ function TopBar() {
       files.length > 1 ? `${files.length} images` : `${files.length} image`;
     message.success(`Success to load ${msg}.`);
   };
-  const onFilesTxtChange = (event: { target: { files: any } }) => {
+
+  const onFilesTxtChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files) return;
     const files = [...event.target.files].filter(
       file =>
         ANNOTATION_TYPES.indexOf(getURLExtension(file.name).toLowerCase()) !==
@@ -135,7 +98,9 @@ function TopBar() {
       files.length > 1 ? `${files.length} txt` : `${files.length} txt`;
     message.success(`Success to load ${msg}.`);
   };
-  const onFilesZipChange = async (event: { target: { files: any[] } }) => {
+
+  const onFilesZipChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files) return;
     // import zip file
     const filess = event.target.files[0];
     //const msg = files.length > 1 ? `${files.length} zip` : `${files.length} zip`;
@@ -170,25 +135,27 @@ function TopBar() {
   };
 
   const onSaveClick = () => {
-    // if (imageFiles.length === 0) {
-    //     message.info('No images are loaded.');
-    //     return;
-    // }
+    if (imageFiles.length === 0) {
+      message.info('No images are loaded.');
+      return;
+    }
     // const xmls = imageFiles.map((file, index) => generateXML(file, imageSizes[index], shapes[index]));
     // exportZip(imageFiles, xmls);
   };
+
   const onNextImageClick = () => {
     if (!imageFiles.length || imageFiles.length < 2) return;
     let index = selDrawImageIndex + 1;
     if (index >= imageFiles.length) index = 0;
-    dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     dispatch(setSelDrawImageIndex({ selDrawImageIndex: index }));
   };
+
   const onPrevImageClick = () => {
     if (!imageFiles.length || imageFiles.length < 2) return;
     let index = selDrawImageIndex - 1;
     if (index < 0) index = imageFiles.length - 1;
-    dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     dispatch(setSelDrawImageIndex({ selDrawImageIndex: index }));
   };
 
@@ -196,25 +163,38 @@ function TopBar() {
     dispatch(setFullScreen());
   };
 
-  const onCocoDownload = () => {
+  const onCocoDownload = async () => {
     if (imageFiles.length === 0) {
       message.info('No images are loaded.');
       return;
     }
-    const xmls = imageFiles.map((file, index) =>
+
+    const files = [];
+    for (const img of imageFiles) {
+      const file = await fetchFileFromObjectUrl(img.obj_url, img.name);
+      files.push(file);
+    }
+
+    const xmls = files.map((file, index) =>
       generateCoco(file, imageSizes[index], shapes[index])
     );
-    exportZip(imageFiles, xmls, 'COCO');
+    exportZip(files, xmls, 'COCO');
   };
-  const onYoloDownload = () => {
+
+  const onYoloDownload = async () => {
     if (imageFiles.length === 0) {
       message.info('No images are loaded.');
       return;
     }
-    const xmls = imageFiles.map((file, index) =>
+    const files = [];
+    for (const img of imageFiles) {
+      const file = await fetchFileFromObjectUrl(img.obj_url, img.name);
+      files.push(file);
+    }
+    const xmls = files.map((file, index) =>
       generateYolo(file, imageSizes[index], shapes[index])
     );
-    exportZip(imageFiles, xmls, 'YOLO');
+    exportZip(files, xmls, 'YOLO');
   };
 
   const items = [
@@ -263,6 +243,7 @@ function TopBar() {
               multiple
               onChange={onFilesChange}
               style={{ display: 'none', zIndex: '100' }}
+              value={''}
             />
             <span className="save-icon">
               <svg

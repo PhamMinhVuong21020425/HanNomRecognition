@@ -8,6 +8,7 @@ import {
   userReducer,
   eventReducer,
   annotationReducer,
+  filesReducer,
 } from './slices';
 
 export const rootReducer = combineReducers({
@@ -16,4 +17,5 @@ export const rootReducer = combineReducers({
   user: userReducer,
   event: eventReducer,
   annotation: annotationReducer,
+  files: filesReducer,
 });
