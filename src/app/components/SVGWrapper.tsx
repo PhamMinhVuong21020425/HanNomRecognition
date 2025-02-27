@@ -1,7 +1,7 @@
 import '../scss/SVGWrapper.scss';
 import { useEffect, useRef, useMemo, useState, MouseEvent } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { cloneDeep, set } from 'lodash';
+import { cloneDeep } from 'lodash';
 import { Tooltip } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -43,7 +43,6 @@ import type {
   Coordinate,
   DrawStyle,
 } from '@/lib/redux/slices/annotationSlice/types';
-import { parse } from 'path';
 
 let pointsX: number[] = [];
 let pointsY: number[] = [];
