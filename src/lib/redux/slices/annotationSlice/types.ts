@@ -1,3 +1,5 @@
+import { ImageType } from '@/types/ImageType';
+
 export type Coordinate = {
   x: number;
   y: number;
@@ -54,8 +56,7 @@ export type DrawStyle = {
 };
 
 export type AnnotationState = {
-  mouseCoordinate: Coordinate;
-  imageFiles: any[];
+  imageFiles: ImageType[];
   selDrawImageIndex: number;
   selImageIndexes: number[];
   imageSizes: ImageSize[];

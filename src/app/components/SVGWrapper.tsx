@@ -2,6 +2,7 @@ import '../scss/SVGWrapper.scss';
 import { useEffect, useRef, useMemo, useState, MouseEvent } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { cloneDeep } from 'lodash';
+import { Tooltip } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faMagnifyingGlassPlus,
@@ -10,10 +11,9 @@ import {
 
 import Loading from './Loading';
 import {
-  getImageSize,
+  getImageSizeFromUrl,
   coordinateFactory,
   getSVGPathD,
-  getShapeXYMaxMin,
   drawStyleFactory,
   shapeFactory,
   imageSizeFactory,
@@ -27,66 +27,34 @@ import {
 } from '@/constants';
 
 import {
+  selectDetections,
   setCurrentShape,
   setDrawStatus,
   setImageSizes,
   setLabelBoxStatus,
-  setMouseCoordinate,
   setSelShapeIndex,
   setShapes,
   useAppDispatch,
   useAppSelector,
 } from '@/lib/redux';
 
-import {
+import type {
   Coordinate,
   DrawStyle,
 } from '@/lib/redux/slices/annotationSlice/types';
 
-const data = {
-  data: [
-    {
-      image_name: 'image1.jpg',
-      objects_detection: [
-        {
-          class: 'car',
-          confidence: 0.9,
-          coordinate: [
-            { x: 10, y: 10 },
-            { x: 100, y: 10 },
-            { x: 100, y: 100 },
-            { x: 10, y: 100 },
-          ],
-        },
-      ],
-    },
-    {
-      image_name: 'image2.jpg',
-      objects_detection: [
-        {
-          class: 'car',
-          confidence: 0.9,
-          coordinate: [
-            { x: 10, y: 10 },
-            { x: 100, y: 10 },
-            { x: 100, y: 100 },
-            { x: 10, y: 100 },
-          ],
-        },
-      ],
-    },
-  ],
-};
-
-let pointsX = [];
-let pointsY = [];
+let pointsX: number[] = [];
+let pointsY: number[] = [];
 
 function SVGWrapper() {
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const [mouseCoordinate, setMouseCoordinate] = useState<Coordinate>({
+    x: 0,
+    y: 0,
+  });
   const dispatch = useAppDispatch();
   const state = useAppSelector(state => state.annotation);
   const {
-    mouseCoordinate,
     imageFiles,
     selDrawImageIndex,
     imageSizes,
@@ -109,6 +77,8 @@ function SVGWrapper() {
     labelStyle,
   } = drawStyle;
 
+  const listDetections = useAppSelector(selectDetections);
+
   //dragging
   const [isDraw, setIsDraw] = useState(false);
   const [isDragging, setDragging] = useState(false);
@@ -124,43 +94,20 @@ function SVGWrapper() {
     setScale(scale => scale - 0.1);
   };
   const [loading, setLoading] = useState(false);
-  // is Insert bounding box?
-  const [isInsert, setInsert] = useState(true);
-  //list of object
-  let listObject2 = data.data;
-  //console.log(listObject2);
-  // let listObject = data.objects_detection;
-
-  // Extract coordinates from filtered objects
-  // const coordinates = listObject.map((obj) => obj.coordinate);
-  // const label = listObject.map((obj) => obj.name);
 
   useEffect(() => {
-    // listObject = data.objects_detection;
-    listObject2 = data.data;
-
-    // const dbRef = ref(imageDb);
-    // const snapshot = await get(child(dbRef, 'server_url'));
-    // listObject2 = await axios.post("snapshot", {
-    //     link: []
-    // })
-    // console.log(snapshot);
-  }, []);
-
-  useEffect(() => {
-    if (selDrawImageIndex === 0 || imageFiles.length === 0) return;
-    const objURL = window.URL.createObjectURL(imageFiles[selDrawImageIndex]);
+    if (selDrawImageIndex === -1 || imageFiles.length === 0) return;
+    const objURL = imageFiles[selDrawImageIndex].obj_url;
     try {
       setLoading(true);
-      getImageSize(objURL).then(size => {
-        const { width, height } = size as { width: number; height: number };
-        listObject2.filter((obj, index) => {
+      getImageSizeFromUrl(objURL).then(size => {
+        const { width, height } = size;
+        listDetections.filter((obj, index) => {
           if (
             obj.image_name.split('.')[0] ===
             imageFiles[selDrawImageIndex].name.split('.')[0]
           ) {
             handleClickPath(imageFiles[selDrawImageIndex].name);
-            listObject2.splice(index);
           }
         });
         setLoading(false);
@@ -210,20 +157,22 @@ function SVGWrapper() {
     } else {
       svgRef.current.style.cursor = 'not-allowed';
     }
-  }, [imageFiles, currentShape, mouseCoordinate]);
+  }, [imageFiles, currentShape]);
 
   const imageProps = useMemo(() => {
-    if (selDrawImageIndex === 0) {
+    if (selDrawImageIndex === -1) {
       return { href: '', width: 0, height: 0 };
     }
     return {
-      href: window.URL.createObjectURL(imageFiles[selDrawImageIndex]),
+      href: imageFiles[selDrawImageIndex].obj_url,
       width: imageSizes[selDrawImageIndex].width,
       height: imageSizes[selDrawImageIndex].height,
     };
   }, [imageFiles, selDrawImageIndex, imageSizes]);
 
-  const getMouseCoordinate = (event: { clientX: number; clientY: number }) => {
+  const getMouseCoordinate = (
+    event: MouseEvent<SVGSVGElement, globalThis.MouseEvent>
+  ) => {
     if (!event) return coordinateFactory({ x: 0, y: 0 });
 
     const CTM = svgRef.current!.getScreenCTM();
@@ -249,8 +198,6 @@ function SVGWrapper() {
     const point4 = { x: point3.x, y: point1.y };
 
     currentShapeCopy.paths = [point1, point2, point3, point4, point1];
-    // console.log(currentShapeCopy.paths);
-    // console.log(currentShapeCopy.paths);
     currentShapeCopy.exactPathCount = currentShapeCopy.paths.length - 1;
     currentShapeCopy.d = getSVGPathD(currentShapeCopy.paths, false);
     dispatch(setCurrentShape({ currentShape: currentShapeCopy }));
@@ -320,9 +267,13 @@ function SVGWrapper() {
     }
   };
 
-  const isLeftMouseClick = (event: { button: number }) => event.button === 0;
+  const isLeftMouseClick = (
+    event: MouseEvent<SVGSVGElement | SVGPathElement, globalThis.MouseEvent>
+  ) => event.button === 0;
 
-  const onSVGMouseDown = (event: { clientX: number; clientY: number }) => {
+  const onSVGMouseDown = (
+    event: MouseEvent<SVGSVGElement, globalThis.MouseEvent>
+  ) => {
     if (!svgRef.current) return;
     if (dragStatus === 'DRAG_IMAGE') {
       svgRef.current.style.cursor = 'move';
@@ -341,7 +292,9 @@ function SVGWrapper() {
     }
   };
 
-  const onSVGMouseMove = (event: { clientX: number; clientY: number }) => {
+  const onSVGMouseMove = (
+    event: MouseEvent<SVGSVGElement, globalThis.MouseEvent>
+  ) => {
     if (!svgRef.current) return;
     if (!isDraw && isDragging) {
       const CTM = svgRef.current.getScreenCTM();
@@ -363,7 +316,7 @@ function SVGWrapper() {
     }
 
     const coordinate = getMouseCoordinate(event);
-    dispatch(setMouseCoordinate({ mouseCoordinate: coordinate }));
+    setMouseCoordinate(coordinate);
 
     if ((drawStatus !== DRAW_STATUS_TYPES.DRAWING && !currentShape) || !isDraw)
       return;
@@ -379,7 +332,9 @@ function SVGWrapper() {
     }
   };
 
-  const onSVGMouseUp = (event: any) => {
+  const onSVGMouseUp = (
+    event: MouseEvent<SVGSVGElement, globalThis.MouseEvent>
+  ) => {
     if (!isDraw) {
       setDragging(false);
     }
@@ -389,7 +344,7 @@ function SVGWrapper() {
     if (!isValidCoordinate({ ...mouseCoordinate })) return;
     // check dragging
     if (drawStatus === DRAW_STATUS_TYPES.SELECT) {
-      dispatch(setSelShapeIndex({ selShapeIndex: 0 }));
+      dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
       return;
     }
 
@@ -438,24 +393,24 @@ function SVGWrapper() {
   //     return path;
   // };
 
-  const handleClickPath = async (imageName: string) => {
+  const handleClickPath = (imageName: string) => {
     // danh sách tất cả các shapes đang có, phải kiểu dữ liệu mảng
     //const listShape = [shapeFactoryTest(coordinates[0]), shapeFactoryTest(coordinates[1])];
-    const result = await listObject2.find(item => {
+    const result = listDetections.find(item => {
       let imageWithoutEx = item.image_name.split('.')[0];
-      // console.log(imageWithoutEx);
       let imageNameNew = imageName.split('.')[0];
       return imageWithoutEx === imageNameNew;
     });
-    let list: any = [];
-    if (result) {
-      list = result.objects_detection
-        .filter(obj => obj.confidence > 0.3)
-        .map(obj => ({
-          coordinate: obj.coordinate,
-          name: obj.class,
-        }));
-    }
+
+    const listBoxes = result
+      ? result.objects_detection
+          .filter(obj => obj.confidence > 0.2)
+          .map(obj => ({
+            coordinates: obj.coordinates,
+            name: obj.class,
+          }))
+      : [];
+
     //console.log(list[0].coordinate);
     // let listShape = listObject
     //     .filter((obj) => obj.image_name === imageName)
@@ -468,10 +423,11 @@ function SVGWrapper() {
     //         payload: { currentShape: newShape },
     //     });
     // }
-    for (var i = 0; i < list.length; i++) {
-      const newShape = shapeFactoryTest(list[i].coordinate);
-      dispatch(setCurrentShape({ currentShape: newShape }));
-    }
+
+    // for (var i = 0; i < listBoxes.length; i++) {
+    //   const newShape = shapeFactoryTest(listBoxes[i].coordinates);
+    //   dispatch(setCurrentShape({ currentShape: newShape }));
+    // }
 
     const shapesCopy = cloneDeep(shapes);
 
@@ -482,11 +438,21 @@ function SVGWrapper() {
     //     currentShapeCopy.label = listLabel[i].name;
     //     shapesCopy[selDrawImageIndex] = [...shapesCopy[selDrawImageIndex], currentShapeCopy];
     // }
-    for (var i = 0; i < list.length; i++) {
-      let currentShapeCopy = cloneDeep(shapeFactoryTest(list[i].coordinate));
+
+    if (
+      shapesCopy[selDrawImageIndex] &&
+      shapesCopy[selDrawImageIndex].length > 0
+    )
+      return;
+
+    shapesCopy[selDrawImageIndex] = [];
+    for (var i = 0; i < listBoxes.length; i++) {
+      let currentShapeCopy = cloneDeep(
+        shapeFactoryTest(listBoxes[i].coordinates)
+      );
       currentShapeCopy.paths.pop();
       currentShapeCopy.d = getSVGPathD(currentShapeCopy.paths, true);
-      currentShapeCopy.label = list[i].name;
+      currentShapeCopy.label = listBoxes[i].name;
       shapesCopy[selDrawImageIndex] = [
         ...shapesCopy[selDrawImageIndex],
         currentShapeCopy,
@@ -497,10 +463,7 @@ function SVGWrapper() {
   };
 
   return (
-    <div
-      className="svg-wrapper"
-      style={{ display: 'flex', justifyContent: 'flex-end' }}
-    >
+    <div className="svg-wrapper flex items-start justify-end">
       {loading && (
         <div className="loading-animation">
           <Loading />
@@ -546,24 +509,35 @@ function SVGWrapper() {
             Array.isArray(shapes[selDrawImageIndex]) &&
             shapes[selDrawImageIndex].map((shape, index) =>
               !shape.visible ? null : (
-                <g key={shape.d}>
-                  <path
-                    d={shape.d}
-                    style={
-                      shape.isSelect ? { ...selShapeStyle } : { ...shapeStyle }
-                    }
-                    onMouseUp={event => onShapeMouseUp(event, index)}
-                  />
-                  {shape.label && (
-                    <text
-                      x={getShapeXYMaxMin(shape.paths).xmin}
-                      y={getShapeXYMaxMin(shape.paths).ymin}
-                      style={{ ...labelStyle }}
-                    >
-                      {shape.label}
-                    </text>
-                  )}
-                </g>
+                <Tooltip
+                  key={shape.d}
+                  title={shape.label}
+                  placement="top" // Position: top, bottom, left, right
+                  mouseEnterDelay={0} // Delay before showing tooltip
+                  mouseLeaveDelay={0} // Delay before hiding tooltip
+                  trigger="hover" // Can be hover, click, etc
+                  arrow={true} // Show/hide arrow
+                  color="#fff"
+                  styles={{
+                    body: {
+                      color: '#333',
+                      fontSize: '14px',
+                      padding: '8px 12px',
+                    },
+                  }}
+                >
+                  <g>
+                    <path
+                      d={shape.d}
+                      style={
+                        shape.isSelect
+                          ? { ...selShapeStyle }
+                          : { ...shapeStyle }
+                      }
+                      onMouseUp={event => onShapeMouseUp(event, index)}
+                    />
+                  </g>
+                </Tooltip>
               )
             )}
         </svg>

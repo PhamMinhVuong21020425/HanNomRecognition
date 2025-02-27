@@ -31,7 +31,7 @@ function RightToolbar() {
       label: (
         <span style={{ fontWeight: 'bolder' }}>
           <FontAwesomeIcon icon={faTag} style={{ marginRight: '8px' }} />
-          {`Labels (${selDrawImageIndex !== 0 ? shapes[selDrawImageIndex].length : 0})`}
+          {`Labels (${selDrawImageIndex !== -1 ? shapes[selDrawImageIndex].length : 0})`}
         </span>
       ),
       children: <LabelList />,

@@ -13,9 +13,10 @@ import { drawStyleFactory } from '@/utils/general';
 
 /* Types */
 import type { AnnotationState, Shape, ImageSize, DrawStyle } from './types';
+import type { ImageType } from '@/types/ImageType';
 
 type SetImageFilesPayload = {
-  imageFiles: any[];
+  imageFiles: ImageType[];
   selDrawImageIndex: number;
   imageSizes: ImageSize[];
   drawStatus: string;
@@ -44,28 +45,27 @@ type SetXmlPreviewBoxStatusPayload = {
 
 /* Initial State */
 const initialState: AnnotationState = {
-  mouseCoordinate: { x: 0, y: 0 },
   imageFiles: [],
-  selDrawImageIndex: 0,
+  selDrawImageIndex: -1,
   selImageIndexes: [],
   imageSizes: [],
   txtFiles: [],
-  selDrawTxtIndex: 0,
+  selDrawTxtIndex: -1,
   selTxtIndexes: [],
   drawStyle: drawStyleFactory(0) as DrawStyle,
   drawStatus: DRAW_STATUS_TYPES.IDLE,
   selShapeType: SHAPE_TYPES.POLYGON,
   currentShape: null,
   shapes: [],
-  selShapeIndex: 0,
+  selShapeIndex: -1,
   labelTypes: [],
   selLabelType: '',
   labelBoxStatus: LABEL_STATUS_TYPES.IDLE,
   labelBoxVisible: false,
-  selPreviewIndex: 0,
+  selPreviewIndex: -1,
   xmlPreviewBoxVisible: false,
   urlBoxVisible: false,
-  closePointRegion: 0,
+  closePointRegion: 6,
   dragStatus: '',
   fullScreen: '',
   isShowUpload: false,
@@ -76,10 +76,6 @@ export const annotationSlice = createSlice({
   name: 'annotation',
   initialState,
   reducers: {
-    setMouseCoordinate: (state, action) => {
-      state.mouseCoordinate = action.payload.mouseCoordinate;
-    },
-
     setImageFiles: (state, action: PayloadAction<SetImageFilesPayload>) => {
       const {
         imageFiles,
@@ -106,7 +102,7 @@ export const annotationSlice = createSlice({
       state.selDrawImageIndex = action.payload.selDrawImageIndex;
       state.drawStatus = DRAW_STATUS_TYPES.IDLE;
       state.currentShape = null;
-      state.selShapeIndex = 0;
+      state.selShapeIndex = -1;
     },
 
     setImageSizes: (
@@ -143,7 +139,7 @@ export const annotationSlice = createSlice({
       state.selDrawTxtIndex = action.payload.selDrawTxtIndex;
       state.drawStatus = DRAW_STATUS_TYPES.IDLE;
       state.currentShape = null;
-      state.selShapeIndex = 0;
+      state.selShapeIndex = -1;
     },
 
     setSelTxtIndexes: (
@@ -222,11 +218,11 @@ export const annotationSlice = createSlice({
     ) => {
       const { selShapeIndex } = action.payload;
       state.drawStatus =
-        selShapeIndex === null
+        selShapeIndex === -1
           ? DRAW_STATUS_TYPES.IDLE
           : DRAW_STATUS_TYPES.SELECT;
 
-      if (state.selDrawImageIndex !== null) {
+      if (state.selDrawImageIndex !== -1) {
         state.shapes = state.shapes.map((item, index) => {
           if (index !== state.selDrawImageIndex) return item;
           return item.map((subItem, subIndex) => {
@@ -246,7 +242,7 @@ export const annotationSlice = createSlice({
     ) => {
       const { selShapeIndex } = action.payload;
       state.drawStatus =
-        selShapeIndex === null
+        selShapeIndex === -1
           ? DRAW_STATUS_TYPES.IDLE
           : DRAW_STATUS_TYPES.SELECT;
       state.selShapeIndex = selShapeIndex;
@@ -264,25 +260,25 @@ export const annotationSlice = createSlice({
     },
 
     deleteSelShape: state => {
-      if (state.selDrawImageIndex !== null && state.selShapeIndex !== null) {
+      if (state.selDrawImageIndex !== -1 && state.selShapeIndex !== -1) {
         state.drawStatus = DRAW_STATUS_TYPES.IDLE;
         state.shapes = state.shapes.map((item, index) =>
           index === state.selDrawImageIndex
             ? item?.filter((_, subIndex) => subIndex !== state.selShapeIndex)
             : item
         );
-        state.selShapeIndex = 0;
+        state.selShapeIndex = -1;
       }
     },
 
     deleteAllShapes: state => {
-      if (state.selDrawImageIndex !== null) {
+      if (state.selDrawImageIndex !== -1) {
         state.drawStatus = DRAW_STATUS_TYPES.IDLE;
         state.currentShape = null;
         state.shapes = state.shapes.map((item, index) =>
           index === state.selDrawImageIndex ? [] : item
         );
-        state.selShapeIndex = 0;
+        state.selShapeIndex = -1;
       }
     },
 
@@ -308,7 +304,6 @@ export const annotationSlice = createSlice({
 });
 
 export const {
-  setMouseCoordinate,
   setImageFiles,
   setSelDrawImageIndex,
   setImageSizes,

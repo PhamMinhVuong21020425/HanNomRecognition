@@ -1,6 +1,10 @@
 import { Dropdown, Button, message } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
-import { generateXML, exportZip } from '@/utils/general';
+import {
+  generateXML,
+  exportZip,
+  fetchFileFromObjectUrl,
+} from '@/utils/general';
 import { DRAW_STATUS_TYPES } from '@/constants';
 import {
   setImageFiles,
@@ -60,7 +64,9 @@ function ImageListSetting() {
             : DRAW_STATUS_TYPES.IDLE,
         shapes: newShapes,
         selShapeIndex:
-          selImageIndexes.indexOf(selDrawImageIndex) === -1 ? selShapeIndex : 0,
+          selImageIndexes.indexOf(selDrawImageIndex) === -1
+            ? selShapeIndex
+            : -1,
       })
     );
   };
@@ -70,40 +76,48 @@ function ImageListSetting() {
     dispatch(
       setImageFiles({
         imageFiles: [],
-        selDrawImageIndex: 0,
+        selDrawImageIndex: -1,
         imageSizes: [],
         drawStatus: DRAW_STATUS_TYPES.IDLE,
         shapes: [],
-        selShapeIndex: 0,
+        selShapeIndex: -1,
       })
     );
   };
 
-  const onSaveSelectClick = () => {
+  const onSaveSelectClick = async () => {
     if (selImageIndexes.length === 0) {
       message.info('No images are selected.');
       return;
     }
-    const files: any = [];
-    const xmls: any = [];
-    imageFiles.forEach((file, index) => {
-      if (selImageIndexes.indexOf(index) === -1) return;
+    const files: File[] = [];
+    const xmls: string[] = [];
+    for (let i = 0; i < imageFiles.length; i++) {
+      const img = imageFiles[i];
+      if (selImageIndexes.indexOf(i) === -1) continue;
+
+      const file = await fetchFileFromObjectUrl(img.obj_url, img.name);
       files.push(file);
-      const xml = generateXML(file, imageSizes[index], shapes[index]);
+      const xml = generateXML(file, imageSizes[i], shapes[i]);
       xmls.push(xml);
-    });
+    }
     exportZip(files, xmls);
   };
 
-  const onSaveAllClick = () => {
+  const onSaveAllClick = async () => {
     if (imageFiles.length === 0) {
       message.info('No images are loaded.');
       return;
     }
-    const xmls = imageFiles.map((file, index) =>
+    const files = [];
+    for (const img of imageFiles) {
+      const file = await fetchFileFromObjectUrl(img.obj_url, img.name);
+      files.push(file);
+    }
+    const xmls = files.map((file, index) =>
       generateXML(file, imageSizes[index], shapes[index])
     );
-    exportZip(imageFiles, xmls);
+    exportZip(files, xmls);
   };
 
   const items = [
