@@ -54,7 +54,7 @@ const initialState: AnnotationState = {
   selTxtIndexes: [],
   drawStyle: drawStyleFactory(0) as DrawStyle,
   drawStatus: DRAW_STATUS_TYPES.IDLE,
-  selShapeType: SHAPE_TYPES.POLYGON,
+  selShapeType: SHAPE_TYPES.POINTER,
   currentShape: null,
   shapes: [],
   selShapeIndex: -1,
