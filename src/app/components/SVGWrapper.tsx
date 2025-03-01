@@ -42,6 +42,7 @@ import {
 import type {
   Coordinate,
   DrawStyle,
+  Shape,
 } from '@/lib/redux/slices/annotationSlice/types';
 
 let pointsX: number[] = [];
@@ -57,6 +58,7 @@ function SVGWrapper() {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const svgContainerRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(false);
+  const [drawingShape, setDrawingShape] = useState<Shape | null>(null);
   const [mouseCoordinate, setMouseCoordinate] = useState<Coordinate>({
     x: 0,
     y: 0,
@@ -318,13 +320,13 @@ function SVGWrapper() {
       case SHAPE_TYPES.RECTANGLE:
       case SHAPE_TYPES.POLYGON:
         svgRef.current.style.cursor = 'crosshair';
-        if (currentShape && currentShape.paths.length > 0) {
+        if (drawingShape && drawingShape.paths.length > 0) {
           // change cursor when the current point is equal to the first point
           if (
             selShapeType === SHAPE_TYPES.POLYGON &&
-            Math.abs(currentShape.paths[0].x - mouseCoordinate.x) <=
+            Math.abs(drawingShape.paths[0].x - mouseCoordinate.x) <=
               closePointRegion &&
-            Math.abs(currentShape.paths[0].y - mouseCoordinate.y) <=
+            Math.abs(drawingShape.paths[0].y - mouseCoordinate.y) <=
               closePointRegion
           ) {
             svgRef.current.style.cursor = 'pointer';
@@ -337,7 +339,31 @@ function SVGWrapper() {
         svgRef.current.style.cursor = 'default';
         break;
     }
-  }, [imageFiles, currentShape, selShapeType]);
+  }, [imageFiles, drawingShape, selShapeType]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && drawingShape !== null) {
+        setDrawingShape(null);
+        resetDrawStatus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [drawingShape]);
+
+  useEffect(() => {
+    if (drawStatus === DRAW_STATUS_TYPES.IDLE) {
+      setDrawingShape(null);
+    }
+    if (currentShape) {
+      setDrawingShape(currentShape);
+    }
+  }, [drawStatus, currentShape]);
 
   const imageProps = useMemo(() => {
     if (selDrawImageIndex === -1) {
@@ -372,7 +398,7 @@ function SVGWrapper() {
   };
 
   const movingRectangle = (coordinate: Coordinate) => {
-    const currentShapeCopy = cloneDeep(currentShape);
+    const currentShapeCopy = cloneDeep(drawingShape);
     if (!currentShapeCopy) return;
     const point1 = currentShapeCopy.paths[0];
     const point3 = coordinate;
@@ -382,11 +408,11 @@ function SVGWrapper() {
     currentShapeCopy.paths = [point1, point2, point3, point4, point1];
     currentShapeCopy.exactPathCount = currentShapeCopy.paths.length - 1;
     currentShapeCopy.d = getSVGPathD(currentShapeCopy.paths, false);
-    dispatch(setCurrentShape({ currentShape: currentShapeCopy }));
+    setDrawingShape(currentShapeCopy);
   };
 
   const movingPolygon = (coordinate: Coordinate) => {
-    const currentShapeCopy = cloneDeep(currentShape);
+    const currentShapeCopy = cloneDeep(drawingShape);
     if (!currentShapeCopy) return;
     if (currentShapeCopy.exactPathCount === currentShapeCopy.paths.length) {
       currentShapeCopy.paths.push(coordinate);
@@ -394,12 +420,13 @@ function SVGWrapper() {
       currentShapeCopy.paths[currentShapeCopy.paths.length - 1] = coordinate;
     }
     currentShapeCopy.d = getSVGPathD(currentShapeCopy.paths, false);
-    dispatch(setCurrentShape({ currentShape: currentShapeCopy }));
+    setDrawingShape(currentShapeCopy);
   };
 
   const drawRectanglePoint = () => {
     // finish drawing
-    if (!currentShape || currentShape.exactPathCount === 1) return;
+    if (!drawingShape || drawingShape.exactPathCount === 1) return;
+    dispatch(setCurrentShape({ currentShape: drawingShape }));
     dispatch(
       setLabelBoxStatus({
         selLabelType,
@@ -411,15 +438,16 @@ function SVGWrapper() {
   };
 
   const drawPolygonPoint = () => {
-    if (!currentShape) return;
+    if (!drawingShape) return;
     if (
-      currentShape.paths.length > 0 &&
-      Math.abs(currentShape.paths[0].x - mouseCoordinate.x) <=
+      drawingShape.paths.length > 0 &&
+      Math.abs(drawingShape.paths[0].x - mouseCoordinate.x) <=
         closePointRegion &&
-      Math.abs(currentShape.paths[0].y - mouseCoordinate.y) <= closePointRegion
+      Math.abs(drawingShape.paths[0].y - mouseCoordinate.y) <= closePointRegion
     ) {
       // finish drawing
-      if (currentShape.exactPathCount === 1) return;
+      if (drawingShape.exactPathCount === 1) return;
+      dispatch(setCurrentShape({ currentShape: drawingShape }));
       dispatch(
         setLabelBoxStatus({
           selLabelType,
@@ -432,20 +460,20 @@ function SVGWrapper() {
       // keep drawing
       pointsX = [];
       pointsY = [];
-      for (var i = 0; i < currentShape.paths.length; i++) {
-        pointsX.push(currentShape.paths[i].x);
-        pointsY.push(currentShape.paths[i].y);
+      for (var i = 0; i < drawingShape.paths.length; i++) {
+        pointsX.push(drawingShape.paths[i].x);
+        pointsY.push(drawingShape.paths[i].y);
       }
 
-      if (currentShape.exactPathCount === currentShape.paths.length) return;
-      const currentShapeCopy = cloneDeep(currentShape);
+      if (drawingShape.exactPathCount === drawingShape.paths.length) return;
+      const currentShapeCopy = cloneDeep(drawingShape);
       currentShapeCopy.paths[currentShapeCopy.paths.length - 1] = {
         ...mouseCoordinate,
       };
       currentShapeCopy.exactPathCount += 1;
       currentShapeCopy.d = getSVGPathD(currentShapeCopy.paths, false);
 
-      dispatch(setCurrentShape({ currentShape: currentShapeCopy }));
+      setDrawingShape(currentShapeCopy);
     }
   };
 
@@ -544,7 +572,7 @@ function SVGWrapper() {
         break;
       case SHAPE_TYPES.RECTANGLE:
         if (
-          (drawStatus !== DRAW_STATUS_TYPES.DRAWING && !currentShape) ||
+          (drawStatus !== DRAW_STATUS_TYPES.DRAWING && !drawingShape) ||
           !isDraw
         )
           return;
@@ -552,7 +580,7 @@ function SVGWrapper() {
         break;
       case SHAPE_TYPES.POLYGON:
         if (
-          (drawStatus !== DRAW_STATUS_TYPES.DRAWING && !currentShape) ||
+          (drawStatus !== DRAW_STATUS_TYPES.DRAWING && !drawingShape) ||
           !isDraw
         )
           return;
@@ -589,9 +617,9 @@ function SVGWrapper() {
       // start drawing
       const newShape = shapeFactory(mouseCoordinate);
 
-      dispatch(setCurrentShape({ currentShape: newShape }));
+      setDrawingShape(newShape);
       dispatch(setDrawStatus({ drawStatus: DRAW_STATUS_TYPES.DRAWING }));
-    } else if (drawStatus === DRAW_STATUS_TYPES.DRAWING && currentShape) {
+    } else if (drawStatus === DRAW_STATUS_TYPES.DRAWING && drawingShape) {
       switch (selShapeType) {
         case SHAPE_TYPES.RECTANGLE:
           drawRectanglePoint();
@@ -648,10 +676,7 @@ function SVGWrapper() {
     // let listLabel = listObject.filter((obj) => obj.imageName === imageName);
     // for (var i = 0; i < listShape.length; i++) {
     //     const newShape = listShape[i];
-    //     dispatch({
-    //         type: actionTypes.SET_CURRENT_SHAPE,
-    //         payload: { currentShape: newShape },
-    //     });
+    //     dispatch(setCurrentShape({ currentShape: newShape }));
     // }
 
     // for (var i = 0; i < listBoxes.length; i++) {
@@ -726,13 +751,13 @@ function SVGWrapper() {
               preserveAspectRatio="xMidYMid slice"
             />
 
-            {currentShape && (
+            {drawingShape && (
               <g>
                 <path
-                  d={currentShape.d}
+                  d={drawingShape.d}
                   style={{ ...drawingShapePathStyle } as React.CSSProperties}
                 />
-                {currentShape.paths.map(point => (
+                {drawingShape.paths.map(point => (
                   <circle
                     key={uuidv4()}
                     cx={point.x}
