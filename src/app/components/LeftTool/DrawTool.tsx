@@ -1,6 +1,6 @@
 import { cloneDeep } from 'lodash';
-import { useEffect, useState } from 'react';
-import { Row, Col, Tooltip, Divider } from 'antd';
+import { useEffect, useState, useRef, ChangeEvent } from 'react';
+import { Row, Col, Tooltip, Divider, message } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faDrawPolygon,
@@ -14,6 +14,8 @@ import {
   Trash2,
   Eraser,
   MoreHorizontal,
+  Upload as UploadIcon,
+  Wand2,
 } from 'lucide-react';
 
 import {
@@ -36,12 +38,13 @@ type ActiveToolType =
   | 'rotate'
   | 'polygon'
   | 'rectangle'
-  | 'more'
   | null;
 
 function DrawTool() {
   const dispatch = useAppDispatch();
   const [showClearAllDialog, setShowClearAllDialog] = useState(false);
+  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+  const moreButtonRef = useRef<HTMLDivElement>(null);
   const state = useAppSelector(state => state.annotation);
 
   const {
@@ -75,6 +78,24 @@ function DrawTool() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [currentShape, selShapeIndex]);
+
+  useEffect(() => {
+    // Handle clicks outside the more menu to close it
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        moreButtonRef.current &&
+        !moreButtonRef.current.contains(event.target as Node) &&
+        moreMenuVisible
+      ) {
+        setMoreMenuVisible(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [moreMenuVisible]);
 
   const handleToolClick = (tool?: ActiveToolType, callback?: () => void) => {
     if (tool) setActiveTool(tool);
@@ -118,6 +139,17 @@ function DrawTool() {
   const onClearAllClick = () => {
     dispatch(deleteAllShapes());
     setShowClearAllDialog(false);
+  };
+
+  const handleAutoAnnotation = () => {
+    message.info('Starting auto annotation...');
+    setMoreMenuVisible(false);
+    // Implement auto annotation logic here
+  };
+
+  const handleUploadAnnotation = (event: ChangeEvent<HTMLInputElement>) => {
+    console.log('Upload annotation', event.target.files);
+    setMoreMenuVisible(false);
   };
 
   // Common styles for tool buttons
@@ -373,22 +405,110 @@ function DrawTool() {
           </div>
         )}
 
-        <Col span={24} style={{ display: 'flex', justifyContent: 'center' }}>
-          <Tooltip title="More Options" placement="right">
+        {/* More Options Button with Dropdown */}
+        <Col
+          span={24}
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            position: 'relative',
+          }}
+        >
+          <Tooltip title="More Options" placement="top">
             <div
               style={{
                 ...toolButtonStyle,
-                backgroundColor: activeTool === 'more' ? '#f0f9eb' : 'white',
-                borderColor: activeTool === 'more' ? '#b7eb8f' : '#e8e8e8',
+                backgroundColor: moreMenuVisible ? '#f0f9eb' : 'white',
+                borderColor: moreMenuVisible ? '#b7eb8f' : '#e8e8e8',
               }}
-              onClick={() => handleToolClick('more')}
+              onClick={() => {
+                setMoreMenuVisible(true);
+              }}
             >
               <MoreHorizontal
                 size={22}
-                color={activeTool === 'more' ? '#52c41a' : '#222222'}
+                color={moreMenuVisible ? '#52c41a' : '#222222'}
               />
             </div>
           </Tooltip>
+
+          {/* More Options Dropdown Menu */}
+          {moreMenuVisible && (
+            <div
+              ref={moreButtonRef}
+              style={{
+                position: 'absolute',
+                left: '60px',
+                top: '0px',
+                width: '220px',
+                backgroundColor: 'white',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                zIndex: 1000,
+              }}
+            >
+              <div
+                style={{
+                  padding: '8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                }}
+              >
+                {/* Auto Annotation Option */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '10px 12px',
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                    transition: 'background-color 0.2s',
+                    gap: '10px',
+                  }}
+                  className="hover:bg-gray-100"
+                  onClick={handleAutoAnnotation}
+                >
+                  <Wand2 size={18} color="#52c41a" />
+                  <span style={{ color: '#333333', fontSize: '14px' }}>
+                    Auto Annotation
+                  </span>
+                </div>
+
+                {/* Upload Annotations Option */}
+                <div className="hover:bg-gray-100">
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '10px 12px',
+                      cursor: 'pointer',
+                      borderRadius: '6px',
+                      transition: 'background-color 0.2s',
+                      gap: '10px',
+                    }}
+                    onClick={() =>
+                      document.getElementById('upload-annotations')?.click()
+                    }
+                  >
+                    <input
+                      id="upload-annotations"
+                      type="file"
+                      accept=".txt"
+                      multiple
+                      onChange={handleUploadAnnotation}
+                      style={{ display: 'none' }}
+                      value={''}
+                    />
+                    <UploadIcon size={18} color="#52c41a" />
+                    <span style={{ color: '#333333', fontSize: '14px' }}>
+                      Upload Annotations
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </Col>
       </Row>
     </div>
