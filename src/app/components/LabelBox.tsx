@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { cloneDeep } from 'lodash';
-import { Modal, Row, Col, Input, Card, Button } from 'antd';
+import { Modal, Row, Col, Input, Card, Button, InputRef } from 'antd';
 import Draggable, { DraggableData, DraggableEvent } from 'react-draggable';
 
 import { getSVGPathD } from '@/utils/general';
@@ -10,7 +10,6 @@ import {
   setCurrentShape,
   setLabelBoxStatus,
   setLabelTypes,
-  setSelLabelType,
   setSelShapeIndex,
   setShapes,
   useAppDispatch,
@@ -31,6 +30,8 @@ function LabelBox() {
     labelTypes,
   } = state;
   const draggleRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<InputRef | null>(null);
+  const [currentLabelType, setCurrentLabelType] = useState('');
   const [disabled, setDisabled] = useState(true);
   const [bounds, setBounds] = useState({
     left: 0,
@@ -39,33 +40,54 @@ function LabelBox() {
     right: 0,
   });
 
+  useEffect(() => {
+    if (labelBoxStatus === LABEL_STATUS_TYPES.UPDATE) {
+      setCurrentLabelType(selLabelType);
+    } else {
+      setCurrentLabelType('');
+    }
+    setTimeout(() => {
+      if (inputRef.current) {
+        const input = inputRef.current.input;
+        if (input) {
+          input.focus();
+          const length = input.value.length;
+          input.setSelectionRange(length, length);
+        }
+      }
+    }, 100);
+  }, [labelBoxStatus]);
+
   const onOk = () => {
-    if (!selLabelType) return;
+    setCurrentLabelType(currentLabelType.trim());
+    if (!currentLabelType) return;
     const shapesCopy = cloneDeep(shapes);
     if (labelBoxStatus === LABEL_STATUS_TYPES.CREATE) {
       const currentShapeCopy = cloneDeep(currentShape);
       if (!currentShapeCopy) return;
       currentShapeCopy.paths.pop();
       currentShapeCopy.d = getSVGPathD(currentShapeCopy.paths, true);
-      currentShapeCopy.label = selLabelType;
+      currentShapeCopy.label = currentLabelType;
       shapesCopy[selDrawImageIndex] = [
         ...shapesCopy[selDrawImageIndex],
         currentShapeCopy,
       ];
     } else if (labelBoxStatus === LABEL_STATUS_TYPES.UPDATE) {
-      shapesCopy[selDrawImageIndex][selShapeIndex].label = selLabelType;
+      shapesCopy[selDrawImageIndex][selShapeIndex].label = currentLabelType;
     }
     dispatch(setShapes({ shapes: shapesCopy }));
     dispatch(
       setLabelBoxStatus({
-        selLabelType,
+        selLabelType: currentLabelType,
         labelBoxVisible: false,
         labelBoxStatus: LABEL_STATUS_TYPES.IDLE,
       })
     );
     dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
-    if (!new Set(labelTypes).has(selLabelType)) {
-      dispatch(setLabelTypes({ labelTypes: [selLabelType, ...labelTypes] }));
+    if (!new Set(labelTypes).has(currentLabelType)) {
+      dispatch(
+        setLabelTypes({ labelTypes: [currentLabelType, ...labelTypes] })
+      );
     }
   };
 
@@ -73,7 +95,7 @@ function LabelBox() {
     dispatch(setCurrentShape({ currentShape: null }));
     dispatch(
       setLabelBoxStatus({
-        selLabelType,
+        selLabelType: currentLabelType,
         labelBoxVisible: false,
         labelBoxStatus: LABEL_STATUS_TYPES.IDLE,
       })
@@ -101,8 +123,8 @@ function LabelBox() {
     });
   };
 
-  const onInputLabelChange = (event: { target: { value: any } }) => {
-    dispatch(setSelLabelType({ selLabelType: event.target.value }));
+  const onInputLabelChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setCurrentLabelType(event.target.value);
   };
 
   const onDeleteLableClick = (value: string) => {
@@ -112,7 +134,7 @@ function LabelBox() {
   };
 
   const onLableItemClick = (value: string) => {
-    dispatch(setSelLabelType({ selLabelType: value }));
+    setCurrentLabelType(value);
   };
 
   return (
@@ -126,7 +148,6 @@ function LabelBox() {
           onMouseOut={onMouseOut}
           onFocus={() => {}}
           onBlur={() => {}}
-          // end
         >
           Label Box
         </div>
@@ -138,19 +159,22 @@ function LabelBox() {
         <Draggable
           disabled={disabled}
           bounds={bounds}
+          nodeRef={draggleRef}
           onStart={(event, uiData) => onStart(event, uiData)}
         >
           <div ref={draggleRef}>{modal}</div>
         </Draggable>
       )}
       okButtonProps={{
-        disabled: !selLabelType,
+        disabled: !currentLabelType.trim(),
       }}
     >
       <Row justify="center" gutter={[8, 12]}>
         <Col xs={24}>
           <Input
-            value={selLabelType}
+            ref={inputRef}
+            placeholder="Label"
+            value={currentLabelType}
             onChange={onInputLabelChange}
             allowClear
           />

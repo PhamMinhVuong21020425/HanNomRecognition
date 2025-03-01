@@ -48,6 +48,7 @@ function DrawTool() {
     selDrawImageIndex,
     selShapeType,
     selShapeIndex,
+    drawStatus,
     currentShape,
     shapes,
   } = state;
@@ -262,16 +263,24 @@ function DrawTool() {
             <div
               style={{
                 ...toolButtonStyle,
-                opacity: currentShape === null ? 0.5 : 1,
-                cursor: currentShape === null ? 'not-allowed' : 'pointer',
+                opacity: drawStatus === DRAW_STATUS_TYPES.DRAWING ? 1 : 0.5,
+                cursor:
+                  drawStatus === DRAW_STATUS_TYPES.DRAWING
+                    ? 'pointer'
+                    : 'not-allowed',
               }}
               onClick={() =>
-                currentShape !== null && handleToolClick(null, onResetClick)
+                drawStatus === DRAW_STATUS_TYPES.DRAWING &&
+                handleToolClick(null, onResetClick)
               }
             >
               <X
                 size={22}
-                color={currentShape === null ? '#999999' : '#222222'}
+                color={
+                  drawStatus !== DRAW_STATUS_TYPES.DRAWING
+                    ? '#999999'
+                    : '#222222'
+                }
               />
             </div>
           </Tooltip>

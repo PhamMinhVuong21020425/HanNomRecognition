@@ -1,4 +1,5 @@
 import '@/app/scss/FileImport.scss';
+import { ChangeEvent } from 'react';
 import { message } from 'antd';
 import { IMAGE_TYPES } from '@/constants';
 import {
@@ -29,7 +30,8 @@ function FileImport() {
     selShapeIndex,
   } = state;
 
-  const onFilesChange = (event: { target: { files: any } }) => {
+  const onFilesChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files) return;
     const files = [...event.target.files].map(
       file =>
         new File([file], `${new Date().getTime()}$$${file.name}`, {
@@ -127,9 +129,9 @@ function FileImport() {
           />
         </label>
       </li>
-      {/* <li>
+      <li>
         <span onClick={onUrlClick}>Open URL</span>
-      </li> */}
+      </li>
       <li>
         <span onClick={onNextImageClick}>Next Image</span>
       </li>
