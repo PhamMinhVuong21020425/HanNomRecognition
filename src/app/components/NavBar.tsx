@@ -9,7 +9,6 @@ import { useAppSelector, selectUser } from '@/lib/redux';
 function NavBar() {
   const [showMenu, setShowMenu] = useState(false);
   const toggleMenu = () => {
-    console.log('click');
     setShowMenu(!showMenu);
   };
   const handleHiddenNav = () => {
