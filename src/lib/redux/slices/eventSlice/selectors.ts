@@ -7,3 +7,9 @@ import type { ReduxState } from '@/lib/redux';
 export const selectIsUploadModal = (state: ReduxState) => state.event.isUploadModal;
 
 export const selectIsOpenDescript = (state: ReduxState) => state.event.isOpenDescript;
+
+export const selectDragStatus = (state: ReduxState) => state.event.dragStatus;
+
+export const selectIsRotate = (state: ReduxState) => state.event.isRotate;
+
+export const selectIsFullscreen = (state: ReduxState) => state.event.isFullScreen;

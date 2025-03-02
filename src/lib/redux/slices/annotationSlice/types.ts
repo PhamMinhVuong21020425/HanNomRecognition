@@ -76,8 +76,5 @@ export type AnnotationState = {
   selPreviewIndex: number;
   xmlPreviewBoxVisible: boolean;
   urlBoxVisible: boolean;
-  closePointRegion: number;
-  dragStatus: string;
-  fullScreen: string;
   isShowUpload: boolean;
 };

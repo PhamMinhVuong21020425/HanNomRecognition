@@ -13,7 +13,6 @@ import {
 import Loading from './Loading';
 import {
   getImageSizeFromUrl,
-  coordinateFactory,
   getSVGPathD,
   drawStyleFactory,
   shapeFactory,
@@ -22,6 +21,7 @@ import {
 } from '@/utils/general';
 
 import {
+  CLOSE_POINT_REGION,
   DRAW_STATUS_TYPES,
   LABEL_STATUS_TYPES,
   SHAPE_TYPES,
@@ -29,6 +29,8 @@ import {
 
 import {
   selectDetections,
+  selectDragStatus,
+  selectIsRotate,
   setCurrentShape,
   setDrawStatus,
   setImageSizes,
@@ -76,9 +78,9 @@ function SVGWrapper() {
     selShapeIndex,
     shapes,
     selLabelType,
-    closePointRegion,
-    dragStatus,
   } = state;
+  const closePointRegion = CLOSE_POINT_REGION;
+  const dragStatus = useAppSelector(selectDragStatus);
 
   const {
     shapeStyle,
@@ -94,6 +96,10 @@ function SVGWrapper() {
   const [isDraw, setIsDraw] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [prevPosition, setPrevPosition] = useState({ x: 0, y: 0 });
+
+  // Rotation state
+  const isRotate = useAppSelector(selectIsRotate);
+  const [rotation, setRotation] = useState(0);
 
   // Zoom state
   const [scale, setScale] = useState(1);
@@ -171,10 +177,22 @@ function SVGWrapper() {
     zoomAround(newScale);
   };
 
+  const handleRotate = (degrees = 90) => {
+    if (isTransitioning) return;
+
+    setIsTransitioning(true);
+    setRotation(prev => prev + degrees);
+
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, ZOOM_ANIMATION_DURATION);
+  };
+
   const handleReset = () => {
     setIsTransitioning(true);
     setScale(1);
     setPosition({ x: 0, y: 0 });
+    setRotation(0);
 
     setTimeout(() => {
       setIsTransitioning(false);
@@ -365,6 +383,10 @@ function SVGWrapper() {
     }
   }, [drawStatus, currentShape]);
 
+  useEffect(() => {
+    handleRotate(90);
+  }, [isRotate]);
+
   const imageProps = useMemo(() => {
     if (selDrawImageIndex === -1) {
       return { href: '', width: 0, height: 0 };
@@ -379,14 +401,23 @@ function SVGWrapper() {
   const getMouseCoordinate = (
     event: MouseEvent<HTMLDivElement, globalThis.MouseEvent>
   ) => {
-    if (!event) return coordinateFactory({ x: 0, y: 0 });
+    if (!event || !svgRef.current) return { x: 0, y: 0 };
 
-    const CTM = svgRef.current!.getScreenCTM();
-    if (!CTM) return coordinateFactory({ x: 0, y: 0 });
-    return coordinateFactory({
-      x: parseInt(((event.clientX - CTM.e) / CTM.a).toString(), 10),
-      y: parseInt(((event.clientY - CTM.f) / CTM.d).toString(), 10),
-    });
+    const CTM = svgRef.current.getScreenCTM();
+    if (!CTM) return { x: 0, y: 0 };
+
+    const point = svgRef.current.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+
+    const transformedPoint = point.matrixTransform(CTM.inverse());
+
+    const adjustedCoord = {
+      x: transformedPoint.x,
+      y: transformedPoint.y,
+    };
+
+    return adjustedCoord;
   };
 
   // reset draw status
@@ -485,9 +516,9 @@ function SVGWrapper() {
     const x = cordinate.x;
     const y = cordinate.y;
 
-    const left = Math.max(80, svgRect.left);
+    const left = Math.max(90, svgRect.left);
     const right = Math.min(svgRect.right, 1360);
-    const top = Math.max(120, svgRect.top);
+    const top = Math.max(150, svgRect.top);
     const bottom = Math.min(svgRect.bottom, 760);
 
     const isMouseInside = x >= left && x <= right && y >= top && y <= bottom;
@@ -501,7 +532,7 @@ function SVGWrapper() {
     if (!svgRef.current) return;
     if (dragStatus === 'DRAG_IMAGE' && selShapeType === SHAPE_TYPES.MOVE) {
       const CTM = svgRef.current.getScreenCTM();
-      if (!CTM || !svgRef.current) return;
+      if (!CTM) return;
       const svgRect = svgRef.current.getBoundingClientRect();
 
       const x = event.clientX;
@@ -512,9 +543,14 @@ function SVGWrapper() {
         return;
       }
 
+      const point = svgRef.current.createSVGPoint();
+      point.x = x;
+      point.y = y;
+      const transformedPoint = point.matrixTransform(CTM.inverse());
+
       setPrevPosition({
-        x: parseInt(((event.clientX - CTM.e) / CTM.a).toString(), 10),
-        y: parseInt(((event.clientY - CTM.f) / CTM.d).toString(), 10),
+        x: transformedPoint.x,
+        y: transformedPoint.y,
       });
 
       setIsDragging(true);
@@ -556,17 +592,24 @@ function SVGWrapper() {
           const CTM = svgRef.current.getScreenCTM();
           if (!CTM) return;
 
-          const deltaX =
-            parseInt(((event.clientX - CTM.e) / CTM.a).toString(), 10) -
-            prevPosition.x;
+          const point = svgRef.current.createSVGPoint();
+          point.x = x;
+          point.y = y;
+          const transformedPoint = point.matrixTransform(CTM.inverse());
 
-          const deltaY =
-            parseInt(((event.clientY - CTM.f) / CTM.d).toString(), 10) -
-            prevPosition.y;
+          const deltaX = transformedPoint.x - prevPosition.x;
+          const deltaY = transformedPoint.y - prevPosition.y;
+
+          const angleInRadians = ((rotation % 360) * Math.PI) / 180;
+          const cosTheta = Math.cos(angleInRadians);
+          const sinTheta = Math.sin(angleInRadians);
+
+          const rotatedDeltaX = deltaX * cosTheta - deltaY * sinTheta;
+          const rotatedDeltaY = deltaX * sinTheta + deltaY * cosTheta;
 
           setPosition(position => ({
-            x: position.x + (deltaX * 0.2) / scale,
-            y: position.y + (deltaY * 0.2) / scale,
+            x: position.x + rotatedDeltaX * scale,
+            y: position.y + rotatedDeltaY * scale,
           }));
         }
         break;
@@ -600,12 +643,8 @@ function SVGWrapper() {
 
     if (!svgRef.current) return;
     const svgRect = svgRef.current.getBoundingClientRect();
-    const x = event.clientX;
-    const y = event.clientY;
-    if (!isCoordinateInside({ x, y }, svgRect)) {
-      setIsDragging(false);
+    if (!isCoordinateInside({ x: event.clientX, y: event.clientY }, svgRect))
       return;
-    }
 
     // check dragging
     if (drawStatus === DRAW_STATUS_TYPES.SELECT) {
@@ -736,8 +775,8 @@ function SVGWrapper() {
             viewBox={`0 0 ${imageSizes[selDrawImageIndex].width} ${imageSizes[selDrawImageIndex].height}`}
             style={{
               cursor: 'default',
-              transform: `scale(${scale}) translate(${position.x}px, ${position.y}px)`,
-              transformOrigin: '0 0',
+              transform: `scale(${scale}) translate(${position.x}px, ${position.y}px) rotate(${rotation}deg)`,
+              transformOrigin: '50% 50%', // Center rotation around the middle of the SVG
               transition: isTransitioning
                 ? `transform ${ZOOM_ANIMATION_DURATION}ms ease-out`
                 : 'none',

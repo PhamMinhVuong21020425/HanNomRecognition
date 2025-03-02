@@ -59,11 +59,6 @@ export const getImageSizeFromUrl = (
 
 export const getURLExtension = (url: string) => url.trim().split('.')[1];
 
-export const coordinateFactory = ({ x, y }: Coordinate) => ({
-  x,
-  y,
-});
-
 export const drawStyleFactory = (value: number) => ({
   shapeStyle: {
     cursor: 'pointer',
