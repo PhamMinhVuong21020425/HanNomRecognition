@@ -9,7 +9,7 @@ import {
 import {
   MousePointer,
   Move,
-  RotateCcw,
+  RotateCw,
   X,
   Trash2,
   Eraser,
@@ -24,12 +24,13 @@ import {
   setDragImage,
   setDrawStatus,
   setNotDragImage,
+  setIsRotate,
   setSelShapeType,
   setShapes,
   useAppDispatch,
   useAppSelector,
 } from '@/lib/redux';
-import { DRAW_STATUS_TYPES } from '@/constants';
+import { DRAW_STATUS_TYPES, SHAPE_TYPES } from '@/constants';
 
 // Define active tool type
 type ActiveToolType =
@@ -115,19 +116,22 @@ function DrawTool() {
   };
 
   const onSelShapeTypeChange = (shapeType: string) => {
-    if (shapeType === selShapeType) return;
+    if (shapeType === selShapeType && shapeType !== SHAPE_TYPES.ROTATE) return;
     dispatch(setSelShapeType({ selShapeType: shapeType }));
     switch (shapeType) {
       case 'move':
         dispatch(setDragImage());
         break;
-      case 'pointer':
       case 'rotate':
+        dispatch(setIsRotate());
+        break;
+      case 'pointer':
       case 'polygon':
       case 'rectangle':
-      default:
         dispatch(setNotDragImage());
         onResetClick();
+        break;
+      default:
         break;
     }
   };
@@ -230,7 +234,7 @@ function DrawTool() {
                 handleToolClick('rotate', () => onSelShapeTypeChange('rotate'))
               }
             >
-              <RotateCcw
+              <RotateCw
                 size={22}
                 color={activeTool === 'rotate' ? '#52c41a' : '#222222'}
               />
