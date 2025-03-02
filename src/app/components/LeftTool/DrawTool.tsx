@@ -414,23 +414,21 @@ function DrawTool() {
             position: 'relative',
           }}
         >
-          <Tooltip title="More Options" placement="top">
-            <div
-              style={{
-                ...toolButtonStyle,
-                backgroundColor: moreMenuVisible ? '#f0f9eb' : 'white',
-                borderColor: moreMenuVisible ? '#b7eb8f' : '#e8e8e8',
-              }}
-              onClick={() => {
-                setMoreMenuVisible(true);
-              }}
-            >
-              <MoreHorizontal
-                size={22}
-                color={moreMenuVisible ? '#52c41a' : '#222222'}
-              />
-            </div>
-          </Tooltip>
+          <div
+            style={{
+              ...toolButtonStyle,
+              backgroundColor: moreMenuVisible ? '#f0f9eb' : 'white',
+              borderColor: moreMenuVisible ? '#b7eb8f' : '#e8e8e8',
+            }}
+            onClick={() => {
+              setMoreMenuVisible(true);
+            }}
+          >
+            <MoreHorizontal
+              size={22}
+              color={moreMenuVisible ? '#52c41a' : '#222222'}
+            />
+          </div>
 
           {/* More Options Dropdown Menu */}
           {moreMenuVisible && (
@@ -475,7 +473,7 @@ function DrawTool() {
                   </span>
                 </div>
 
-                {/* Upload Annotations Option */}
+                {/* Upload Annotation Option */}
                 <div className="hover:bg-gray-100">
                   <div
                     style={{
@@ -502,7 +500,7 @@ function DrawTool() {
                     />
                     <UploadIcon size={18} color="#52c41a" />
                     <span style={{ color: '#333333', fontSize: '14px' }}>
-                      Upload Annotations
+                      Upload Annotation
                     </span>
                   </div>
                 </div>

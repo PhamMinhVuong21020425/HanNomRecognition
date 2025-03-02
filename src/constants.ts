@@ -5,8 +5,8 @@ export const DOTS = '...';
 export const DEFAULT_SAVE_FOLDER = 'labels';
 export const YOLO_FOLDER_NAME = 'yolo_format';
 export const COCO_FOLDER_NAME = 'coco_format';
-export const IMPORT_TYPE = ['zip'];
-export const ANNOTATION_TYPES = ['txt'];
+export const IMPORT_TYPE = ['txt', 'json', 'xml', 'zip'];
+export const ANNOTATION_TYPES = ['txt', 'json', 'xml'];
 
 export const DRAW_STATUS_TYPES = {
   IDLE: 'IDLE',
