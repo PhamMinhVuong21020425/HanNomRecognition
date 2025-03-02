@@ -65,9 +65,6 @@ const initialState: AnnotationState = {
   selPreviewIndex: -1,
   xmlPreviewBoxVisible: false,
   urlBoxVisible: false,
-  closePointRegion: 6,
-  dragStatus: '',
-  fullScreen: '',
   isShowUpload: false,
 } satisfies AnnotationState as AnnotationState;
 
@@ -282,18 +279,6 @@ export const annotationSlice = createSlice({
       }
     },
 
-    setDragImage: state => {
-      state.dragStatus = 'DRAG_IMAGE';
-    },
-
-    setNotDragImage: state => {
-      state.dragStatus = 'NOT_DRAG_IMAGE';
-    },
-
-    setFullScreen: state => {
-      state.fullScreen = 'FULL_SCREEN';
-    },
-
     setShowUploadModal: (
       state,
       action: PayloadAction<{ isShowUpload: boolean }>
@@ -326,9 +311,6 @@ export const {
   setSelLabelType,
   deleteSelShape,
   deleteAllShapes,
-  setDragImage,
-  setNotDragImage,
-  setFullScreen,
   setShowUploadModal,
 } = annotationSlice.actions;
 

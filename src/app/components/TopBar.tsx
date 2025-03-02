@@ -32,7 +32,6 @@ import {
   setImageFiles,
   setSelShapeIndex,
   setSelDrawImageIndex,
-  setFullScreen,
 } from '@/lib/redux';
 import { ImageType } from '@/types/ImageType';
 
@@ -185,7 +184,6 @@ function TopBar() {
   };
 
   const onFullScreen = () => {
-    dispatch(setFullScreen());
     setIsFullScreen(!isFullScreen);
     message.info(isFullScreen ? 'Exited full screen' : 'Entered full screen');
   };
