@@ -16,7 +16,7 @@ import { IoMenuSharp } from 'react-icons/io5';
 import { FaRegQuestionCircle } from 'react-icons/fa';
 import { BiInfoCircle, BiFullscreen, BiExitFullscreen } from 'react-icons/bi';
 
-import { ANNOTATION_TYPES, IMAGE_TYPES, IMPORT_TYPE } from '@/constants';
+import { ANNOTATION_TYPES, IMAGE_TYPES, IMPORT_TYPES } from '@/constants';
 import {
   getURLExtension,
   imageSizeFactory,
@@ -24,6 +24,7 @@ import {
   exportZip,
   generateYolo,
   fetchFileFromObjectUrl,
+  generatePascalVoc,
 } from '@/utils/general';
 
 import {
@@ -188,7 +189,7 @@ function TopBar() {
     message.info(isFullScreen ? 'Exited full screen' : 'Entered full screen');
   };
 
-  const onCocoDownload = async () => {
+  const onDownload = async (type: string) => {
     if (imageFiles.length === 0) return;
 
     const files = [];
@@ -197,30 +198,36 @@ function TopBar() {
       files.push(file);
     }
 
-    const xmls = files.map((file, index) =>
-      generateCoco(file, imageSizes[index], shapes[index])
-    );
-    exportZip(files, xmls, 'COCO');
-  };
+    let xmls: string[] = [];
 
-  const onYoloDownload = async () => {
-    if (imageFiles.length === 0) return;
-    const files = [];
-    for (const img of imageFiles) {
-      const file = await fetchFileFromObjectUrl(img.obj_url, img.name);
-      files.push(file);
+    switch (type) {
+      case 'COCO':
+        xmls = files.map((file, index) =>
+          generateCoco(file, imageSizes[index], shapes[index])
+        );
+        break;
+      case 'YOLO':
+        xmls = files.map((file, index) =>
+          generateYolo(file, imageSizes[index], shapes[index])
+        );
+        break;
+      case 'PASCAL_VOC':
+        xmls = files.map((file, index) =>
+          generatePascalVoc(file, imageSizes[index], shapes[index])
+        );
+        break;
+      default:
+        break;
     }
-    const xmls = files.map((file, index) =>
-      generateYolo(file, imageSizes[index], shapes[index])
-    );
-    exportZip(files, xmls, 'YOLO');
+
+    exportZip(files, xmls, type);
   };
 
   const saveItems = [
     {
       key: '1',
       label: (
-        <Button type="text" size="small" onClick={onCocoDownload}>
+        <Button type="text" size="small" onClick={() => onDownload('COCO')}>
           COCO Format
         </Button>
       ),
@@ -228,8 +235,20 @@ function TopBar() {
     {
       key: '2',
       label: (
-        <Button type="text" size="small" onClick={onYoloDownload}>
+        <Button type="text" size="small" onClick={() => onDownload('YOLO')}>
           YOLO Format
+        </Button>
+      ),
+    },
+    {
+      key: '3',
+      label: (
+        <Button
+          type="text"
+          size="small"
+          onClick={() => onDownload('PASCAL_VOC')}
+        >
+          Pascal VOC Format
         </Button>
       ),
     },
@@ -269,7 +288,7 @@ function TopBar() {
             <label className="import-button">
               <input
                 type="file"
-                accept={IMPORT_TYPE.map(type => `.${type}`).join(',')}
+                accept={IMPORT_TYPES.map(type => `.${type}`).join(',')}
                 multiple
                 onChange={onFilesAnnotationChange}
                 style={{ display: 'none' }}
