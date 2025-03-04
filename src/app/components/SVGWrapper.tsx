@@ -295,14 +295,7 @@ function SVGWrapper() {
       setLoading(true);
       getImageSizeFromUrl(objURL).then(size => {
         const { width, height } = size;
-        listDetections.filter((obj, index) => {
-          if (
-            obj.image_name.split('.')[0] ===
-            imageFiles[selDrawImageIndex].name.split('.')[0]
-          ) {
-            handleClickPath(imageFiles[selDrawImageIndex].name);
-          }
-        });
+        handleClickPath(imageFiles[selDrawImageIndex].name);
         dispatch(
           setImageSizes({
             imageSizes: imageSizes.map((item, index) =>
@@ -321,7 +314,7 @@ function SVGWrapper() {
     } catch (error) {
       console.error(error);
     }
-  }, [imageFiles, selDrawImageIndex]);
+  }, [selDrawImageIndex, listDetections]);
 
   useEffect(() => {
     if (imageFiles.length === 0 || !svgRef.current) return;
@@ -692,6 +685,9 @@ function SVGWrapper() {
   };
 
   const handleClickPath = (imageName: string) => {
+    if (shapes[selDrawImageIndex] && shapes[selDrawImageIndex].length > 0)
+      return;
+
     // danh sách tất cả các shapes đang có, phải kiểu dữ liệu mảng
     //const listShape = [shapeFactoryTest(coordinates[0]), shapeFactoryTest(coordinates[1])];
     const result = listDetections.find(item => {
@@ -724,12 +720,6 @@ function SVGWrapper() {
     // }
 
     const shapesCopy = cloneDeep(shapes);
-
-    if (
-      shapesCopy[selDrawImageIndex] &&
-      shapesCopy[selDrawImageIndex].length > 0
-    )
-      return;
 
     shapesCopy[selDrawImageIndex] = [];
     for (var i = 0; i < listBoxes.length; i++) {
