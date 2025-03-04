@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { cloneDeep } from 'lodash';
 import { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { Row, Col, Tooltip, Divider, message } from 'antd';
@@ -29,8 +30,20 @@ import {
   setShapes,
   useAppDispatch,
   useAppSelector,
+  selectDetections,
+  setDetections,
+  setSelShapeIndex,
 } from '@/lib/redux';
-import { DRAW_STATUS_TYPES, SHAPE_TYPES } from '@/constants';
+import { DRAW_STATUS_TYPES, SHAPE_TYPES, ANNOTATION_TYPES } from '@/constants';
+import {
+  fetchFileFromObjectUrl,
+  detectAnnotationFormat,
+  parseXml,
+  parseCoco,
+  parseYolo,
+  parsePascalVoc,
+} from '@/utils/general';
+import Loading from '../Loading';
 
 // Define active tool type
 type ActiveToolType =
@@ -45,10 +58,14 @@ function DrawTool() {
   const dispatch = useAppDispatch();
   const [showClearAllDialog, setShowClearAllDialog] = useState(false);
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
   const moreButtonRef = useRef<HTMLDivElement>(null);
+  const listDetections = useAppSelector(selectDetections);
   const state = useAppSelector(state => state.annotation);
 
   const {
+    imageFiles,
+    imageSizes,
     selDrawImageIndex,
     selShapeType,
     selShapeIndex,
@@ -112,6 +129,7 @@ function DrawTool() {
       return itemCopy;
     });
     dispatch(setShapes({ shapes: shapesCopy }));
+    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     dispatch(setDrawStatus({ drawStatus: DRAW_STATUS_TYPES.IDLE }));
   };
 
@@ -145,15 +163,109 @@ function DrawTool() {
     setShowClearAllDialog(false);
   };
 
-  const handleAutoAnnotation = () => {
+  const handleAutoAnnotation = async () => {
+    if (imageFiles.length === 0) {
+      message.error('Please upload an image first');
+      return;
+    }
+
+    if (shapes[selDrawImageIndex] && shapes[selDrawImageIndex].length > 0) {
+      message.error(
+        'Please clear all shapes before auto annotation for this image'
+      );
+      return;
+    }
+
     message.info('Starting auto annotation...');
     setMoreMenuVisible(false);
-    // Implement auto annotation logic here
+    setLoading(true);
+
+    const formData = new FormData();
+    const image = await fetchFileFromObjectUrl(
+      imageFiles[selDrawImageIndex].obj_url,
+      imageFiles[selDrawImageIndex].name
+    );
+    formData.append('files', image);
+
+    const response = await axios.post(
+      'http://localhost:5000/api/detect',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+
+    dispatch(setDetections([...listDetections, ...response.data]));
+    setLoading(false);
+    message.success('Auto annotation completed');
   };
 
-  const handleUploadAnnotation = (event: ChangeEvent<HTMLInputElement>) => {
-    console.log('Upload annotation', event.target.files);
+  const handleUploadAnnotation = async (
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+    if (imageFiles.length === 0) {
+      message.error('Please upload an image first');
+      return;
+    }
+
     setMoreMenuVisible(false);
+    setLoading(true);
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const fileContent = await file.text();
+
+    let success = true;
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    switch (fileExtension) {
+      case 'json':
+        const reader = new FileReader();
+        reader.onload = () => {
+          const data = JSON.parse(reader.result as string);
+          dispatch(setDetections([...listDetections, ...data]));
+        };
+        reader.readAsText(file);
+        break;
+      case 'xml':
+        const xmlShapesCopy = cloneDeep(shapes);
+        xmlShapesCopy[selDrawImageIndex] = await parseXml(fileContent);
+        dispatch(setShapes({ shapes: xmlShapesCopy }));
+        break;
+      case 'txt':
+        const format = detectAnnotationFormat(fileContent);
+        switch (format) {
+          case 'YOLO':
+            const yoloShapesCopy = cloneDeep(shapes);
+            yoloShapesCopy[selDrawImageIndex] = await parseYolo(
+              fileContent,
+              imageSizes[selDrawImageIndex]
+            );
+            dispatch(setShapes({ shapes: yoloShapesCopy }));
+            break;
+          case 'PASCAL_VOC':
+            const pascalVocShapesCopy = cloneDeep(shapes);
+            pascalVocShapesCopy[selDrawImageIndex] =
+              await parsePascalVoc(fileContent);
+            dispatch(setShapes({ shapes: pascalVocShapesCopy }));
+            break;
+          case 'COCO':
+            const cocoShapesCopy = cloneDeep(shapes);
+            cocoShapesCopy[selDrawImageIndex] = await parseCoco(fileContent);
+            dispatch(setShapes({ shapes: cocoShapesCopy }));
+            break;
+          default:
+            message.error('Invalid annotation format');
+            success = false;
+            break;
+        }
+        break;
+      default:
+        message.error('File type not supported');
+        success = false;
+        break;
+    }
+    setLoading(false);
+    if (success) message.success('Annotation uploaded successfully');
   };
 
   // Common styles for tool buttons
@@ -490,14 +602,13 @@ function DrawTool() {
                       gap: '10px',
                     }}
                     onClick={() =>
-                      document.getElementById('upload-annotations')?.click()
+                      document.getElementById('upload-annotation')?.click()
                     }
                   >
                     <input
-                      id="upload-annotations"
+                      id="upload-annotation"
                       type="file"
-                      accept=".txt"
-                      multiple
+                      accept={ANNOTATION_TYPES.map(ext => `.${ext}`).join(',')}
                       onChange={handleUploadAnnotation}
                       style={{ display: 'none' }}
                       value={''}
@@ -513,6 +624,11 @@ function DrawTool() {
           )}
         </Col>
       </Row>
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Loading />
+        </div>
+      )}
     </div>
   );
 }

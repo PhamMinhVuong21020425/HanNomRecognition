@@ -1,11 +1,12 @@
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { XMLBuilder } from 'fast-xml-parser';
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import { pointsX } from '@/app/components/SVGWrapper';
 
 import {
   COCO_FOLDER_NAME,
   YOLO_FOLDER_NAME,
+  PASCAL_VOC_FOLDER_NAME,
   DEFAULT_SAVE_FOLDER,
 } from '../constants';
 
@@ -57,6 +58,16 @@ export const getImageSizeFromUrl = (
     img.onerror = err => reject(err);
   });
 
+// fetch file from object url
+export const fetchFileFromObjectUrl = async (
+  url: string,
+  fileName: string
+): Promise<File> => {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new File([blob], fileName, { type: blob.type });
+};
+
 export const getURLExtension = (url: string) => url.trim().split('.')[1];
 
 export const drawStyleFactory = (value: number) => ({
@@ -106,6 +117,22 @@ export const getSVGPathD = (paths: Coordinate[], isFinish: boolean) => {
   return d;
 };
 
+// convert date object to string (format: YYYYMMDDhhmmss)
+export const convertDateToString = (dateObj: Date) => {
+  const year = dateObj.getFullYear();
+  const month = (dateObj.getMonth() + 1).toString();
+  const fMonth = month.length === 1 ? `0${month}` : month;
+  const date = dateObj.getDate().toString();
+  const fDate = date.length === 1 ? `0${date}` : date;
+  const hour = dateObj.getHours().toString();
+  const fHour = hour.length === 1 ? `0${hour}` : hour;
+  const minute = dateObj.getMinutes().toString();
+  const fMinute = minute.length === 1 ? `0${minute}` : minute;
+  const second = dateObj.getSeconds().toString();
+  const fSecond = second.length === 1 ? `0${second}` : second;
+  return `${year}${fMonth}${fDate}${fHour}${fMinute}${fSecond}`;
+};
+
 export function getShapeXYMaxMin(paths: Coordinate[]) {
   return {
     array: pointsX,
@@ -153,10 +180,10 @@ export const createPathFromPoints = (points: Coordinate[]) => {
 
   return path;
 };
-export const shapeFactoryTest = (paths: Coordinate[]) => {
+export const shapeFactoryTest = (paths: Coordinate[], label = '') => {
   const d = getSVGPathD(paths, true);
   return {
-    label: '',
+    label,
     visible: true,
     isSelect: false,
     exactPathCount: 1,
@@ -196,23 +223,21 @@ export const annotationCocoTxt = (label_in: string, paths: Coordinate[]) => {
     (acc, cur) => (acc < cur.y ? acc : cur.y),
     Number.MAX_SAFE_INTEGER
   );
-  const xmax = paths.reduce(
+  const x_max = paths.reduce(
     (acc, cur) => (acc > cur.x ? acc : cur.x),
     -Number.MAX_SAFE_INTEGER
   );
-  const ymax = paths.reduce(
+  const y_max = paths.reduce(
     (acc, cur) => (acc > cur.y ? acc : cur.y),
     -Number.MAX_SAFE_INTEGER
   );
-  return [
-    {
-      label: label_in,
-      xmin: x_min,
-      ymin: y_min,
-      width: xmax - x_min,
-      height: ymax - y_min,
-    },
-  ];
+  return {
+    label: label_in,
+    x_min: x_min,
+    y_min: y_min,
+    width: x_max - x_min,
+    height: y_max - y_min,
+  };
 };
 
 export const annotationYoloTxt = (
@@ -228,23 +253,50 @@ export const annotationYoloTxt = (
     (acc, cur) => (acc < cur.y ? acc : cur.y),
     Number.MAX_SAFE_INTEGER
   );
-  const xmax = paths.reduce(
+  const x_max = paths.reduce(
     (acc, cur) => (acc > cur.x ? acc : cur.x),
     -Number.MAX_SAFE_INTEGER
   );
-  const ymax = paths.reduce(
+  const y_max = paths.reduce(
     (acc, cur) => (acc > cur.y ? acc : cur.y),
     -Number.MAX_SAFE_INTEGER
   );
-  return [
-    {
-      label: label_in,
-      x_center: (x_min + xmax) / 2 / size.width,
-      y_center: (y_min + ymax) / 2 / size.height,
-      width: (xmax - x_min) / size.width,
-      height: (ymax - y_min) / size.height,
-    },
-  ];
+  return {
+    label: label_in,
+    x_center: (x_min + x_max) / 2 / size.width,
+    y_center: (y_min + y_max) / 2 / size.height,
+    width: (x_max - x_min) / size.width,
+    height: (y_max - y_min) / size.height,
+  };
+};
+
+export const annotationPascalVocTxt = (
+  label_in: string,
+  paths: Coordinate[]
+) => {
+  const x_min = paths.reduce(
+    (acc, cur) => (acc < cur.x ? acc : cur.x),
+    Number.MAX_SAFE_INTEGER
+  );
+  const y_min = paths.reduce(
+    (acc, cur) => (acc < cur.y ? acc : cur.y),
+    Number.MAX_SAFE_INTEGER
+  );
+  const x_max = paths.reduce(
+    (acc, cur) => (acc > cur.x ? acc : cur.x),
+    -Number.MAX_SAFE_INTEGER
+  );
+  const y_max = paths.reduce(
+    (acc, cur) => (acc > cur.y ? acc : cur.y),
+    -Number.MAX_SAFE_INTEGER
+  );
+  return {
+    label: label_in,
+    x_min,
+    y_min,
+    x_max,
+    y_max,
+  };
 };
 
 export const annotationObjectFactory = (shape: {
@@ -257,32 +309,6 @@ export const annotationObjectFactory = (shape: {
   difficult: 0,
   bndbox: getShapeXYMaxMin(shape.paths),
 });
-
-// convert date object to string (format: YYYYMMDDhhmmss)
-export const convertDateToString = (dateObj: Date) => {
-  const year = dateObj.getFullYear();
-  const month = (dateObj.getMonth() + 1).toString();
-  const fMonth = month.length === 1 ? `0${month}` : month;
-  const date = dateObj.getDate().toString();
-  const fDate = date.length === 1 ? `0${date}` : date;
-  const hour = dateObj.getHours().toString();
-  const fHour = hour.length === 1 ? `0${hour}` : hour;
-  const minute = dateObj.getMinutes().toString();
-  const fMinute = minute.length === 1 ? `0${minute}` : minute;
-  const second = dateObj.getSeconds().toString();
-  const fSecond = second.length === 1 ? `0${second}` : second;
-  return `${year}${fMonth}${fDate}${fHour}${fMinute}${fSecond}`;
-};
-
-// fetch file from object url
-export const fetchFileFromObjectUrl = async (
-  url: string,
-  fileName: string
-): Promise<File> => {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new File([blob], fileName, { type: blob.type });
-};
 
 // xml format
 export const generateXML = (file: File, size: ImageSize, shapes: Shape[]) => {
@@ -300,19 +326,81 @@ export const generateXML = (file: File, size: ImageSize, shapes: Shape[]) => {
   return xmlStr;
 };
 
+export const parseXml = async (xmlStr: string): Promise<Shape[]> => {
+  const parser = new XMLParser();
+  const xmlDoc = parser.parse(xmlStr);
+
+  if (!xmlDoc.object) {
+    return [];
+  }
+
+  const objects = Array.isArray(xmlDoc.object)
+    ? xmlDoc.object
+    : [xmlDoc.object];
+
+  return objects.map((obj: any) => {
+    const label = obj.label || '';
+    const bndbox = obj.bndbox || {};
+    const x_min = parseFloat(bndbox.xmin) || 0;
+    const y_min = parseFloat(bndbox.ymin) || 0;
+    const x_max = parseFloat(bndbox.xmax) || 0;
+    const y_max = parseFloat(bndbox.ymax) || 0;
+
+    return shapeFactoryTest(
+      [
+        { x: x_min, y: y_min },
+        { x: x_max, y: y_min },
+        { x: x_max, y: y_max },
+        { x: x_min, y: y_max },
+        { x: x_min, y: y_min },
+      ],
+      label
+    );
+  });
+};
+
 // coco RECTANGLE format
 export const generateCoco = (file: File, size: ImageSize, shapes: Shape[]) => {
   const annotation = annotationFactory(file);
   annotation.object = shapes.map(shape => annotationObjectFactory(shape));
   const text = shapes.map(shape => annotationCocoTxt(shape.label, shape.paths));
 
-  let arr: any[] = [];
+  let txtContent = '';
   text.forEach(item => {
-    const { label, xmin, ymin, width, height } = item[0];
-    arr.push([label, xmin, ymin, width, height]);
+    const { label, x_min, y_min, width, height } = item;
+    txtContent += `${label} ${x_min} ${y_min} ${width} ${height}\n`;
   });
 
-  return JSON.stringify(arr);
+  return txtContent;
+};
+
+export const parseCoco = async (text: string): Promise<Shape[]> => {
+  const lines = text.trim().split('\n');
+  const shapes: Shape[] = [];
+
+  // Process each line
+  for (const line of lines) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length === 5) {
+      const label = parts[0];
+      const [_, x_min, y_min, width, height] = parts.map(parseFloat);
+
+      shapes.push(
+        shapeFactoryTest(
+          [
+            { x: x_min, y: y_min },
+            { x: x_min + width, y: y_min },
+            { x: x_min + width, y: y_min + height },
+            { x: x_min, y: y_min + height },
+            { x: x_min, y: y_min },
+          ],
+          label
+        )
+      );
+    }
+  }
+
+  return shapes;
 };
 
 // yolo RECTANGLE format
@@ -325,13 +413,100 @@ export const generateYolo = (file: File, size: ImageSize, shapes: Shape[]) => {
     annotationYoloTxt(shape.label, shape.paths, annotation.size)
   );
 
-  let arr: any[] = [];
+  let txtContent = '';
   text.forEach(item => {
-    const { label, x_center, y_center, width, height } = item[0];
-    arr.push([label, x_center, y_center, width, height]);
+    const { label, x_center, y_center, width, height } = item;
+    txtContent += `${label} ${x_center} ${y_center} ${width} ${height}\n`;
   });
 
-  return JSON.stringify(arr);
+  return txtContent;
+};
+
+export const parseYolo = async (
+  text: string,
+  imageSize: ImageSize
+): Promise<Shape[]> => {
+  const lines = text.trim().split('\n');
+  const shapes: Shape[] = [];
+
+  // Process each line
+  for (const line of lines) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length === 5) {
+      const label = parts[0];
+      const [_, x_center, y_center, width, height] = parts.map(parseFloat);
+
+      // Convert normalized coordinates to absolute coordinates
+      const x_min = (x_center - width / 2) * imageSize.width;
+      const y_min = (y_center - height / 2) * imageSize.height;
+      const x_max = (x_center + width / 2) * imageSize.width;
+      const y_max = (y_center + height / 2) * imageSize.height;
+
+      shapes.push(
+        shapeFactoryTest(
+          [
+            { x: x_min, y: y_min },
+            { x: x_max, y: y_min },
+            { x: x_max, y: y_max },
+            { x: x_min, y: y_max },
+            { x: x_min, y: y_min },
+          ],
+          label
+        )
+      );
+    }
+  }
+
+  return shapes;
+};
+
+export const generatePascalVoc = (
+  file: File,
+  size: ImageSize,
+  shapes: Shape[]
+) => {
+  const annotation = annotationFactory(file);
+  annotation.object = shapes.map(shape => annotationObjectFactory(shape));
+  const text = shapes.map(shape =>
+    annotationPascalVocTxt(shape.label, shape.paths)
+  );
+
+  let txtContent = '';
+  text.forEach(item => {
+    const { label, x_min, y_min, x_max, y_max } = item;
+    txtContent += `${label} ${x_min} ${y_min} ${x_max} ${y_max}\n`;
+  });
+
+  return txtContent;
+};
+
+export const parsePascalVoc = async (text: string): Promise<Shape[]> => {
+  const lines = text.trim().split('\n');
+  const shapes: Shape[] = [];
+
+  // Process each line
+  for (const line of lines) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length === 5) {
+      const label = parts[0];
+      const [_, x_min, y_min, x_max, y_max] = parts.map(parseFloat);
+
+      shapes.push(
+        shapeFactoryTest(
+          [
+            { x: x_min, y: y_min },
+            { x: x_max, y: y_min },
+            { x: x_max, y: y_max },
+            { x: x_min, y: y_max },
+            { x: x_min, y: y_min },
+          ],
+          label
+        )
+      );
+    }
+  }
+
+  return shapes;
 };
 
 export const exportXML = (xmlStr: string, fileName = 'label.xml') => {
@@ -361,6 +536,10 @@ export const exportZip = (
     folder = zip.folder(YOLO_FOLDER_NAME);
   }
 
+  if (type === 'PASCAL_VOC') {
+    folder = zip.folder(PASCAL_VOC_FOLDER_NAME);
+  }
+
   files.forEach((file: File, index: number) => {
     folder?.file(file.name, file);
     folder?.file(`${file.name.split('.')[0]}.txt`, xmls[index]);
@@ -369,4 +548,63 @@ export const exportZip = (
   zip.generateAsync({ type: 'blob' }).then(content => {
     saveAs(content, `${convertDateToString(new Date())}.zip`);
   });
+};
+
+export const detectAnnotationFormat = (fileContent: string) => {
+  // Trim and split the file content into lines
+  const lines = fileContent.trim().split('\n');
+
+  // If no lines or empty file
+  if (lines.length === 0) {
+    return 'UNKNOWN';
+  }
+
+  // Take the first line as a sample
+  const firstLine = lines[0].trim().split(/\s+/);
+
+  // Check YOLO format
+  const isYOLO = () => {
+    if (firstLine.length !== 5) return false;
+
+    // YOLO format: label x_center y_center width height (all normalized 0-1)
+    const [_, x, y, w, h] = firstLine.map(parseFloat);
+
+    return (
+      x >= 0 && x <= 1 && y >= 0 && y <= 1 && w > 0 && w <= 1 && h > 0 && h <= 1
+    );
+  };
+
+  // Check Pascal VOC format
+  const isPascalVOC = () => {
+    // Pascal VOC format: label, xmin, ymin, xmax, ymax
+    if (firstLine.length !== 5) return false;
+
+    const [_, xmin, ymin, xmax, ymax] = firstLine.map(parseFloat);
+
+    return xmin >= 0 && ymin >= 0 && xmin < xmax && ymin < ymax;
+  };
+
+  // Check COCO format
+  const isCOCO = () => {
+    // COCO format typically: label, x, y, width, height
+    if (firstLine.length !== 5) return false;
+
+    const [_, x, y, width, height] = firstLine.map(parseFloat);
+
+    return x >= 0 && y >= 0 && width > 0 && height > 0;
+  };
+
+  if (isYOLO()) {
+    return 'YOLO';
+  }
+
+  if (isPascalVOC()) {
+    return 'PASCAL_VOC';
+  }
+
+  if (isCOCO()) {
+    return 'COCO';
+  }
+
+  return 'UNKNOWN';
 };

@@ -20,14 +20,12 @@ import Footer from '../components/Footer';
 import Loading from '../components/Loading';
 import StepAnnotation from '../components/StepAnnotation';
 import CreateModel from '../components/CreateModel';
-import axios from 'axios';
 import {
   useAppDispatch,
   useAppSelector,
   selectLanguage,
   selectUser,
   setImagesRedux,
-  setDetections,
 } from '@/lib/redux';
 import type { ImageType } from '@/types/ImageType';
 
@@ -154,18 +152,6 @@ function ImportImage() {
     try {
       setIsLoading(true);
       dispatch(setImagesRedux(previews));
-      const formData = new FormData();
-      images.forEach(image => formData.append('files', image));
-
-      const response = await axios.post(
-        'http://localhost:5000/api/detect',
-        formData,
-        {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        }
-      );
-
-      dispatch(setDetections(response.data));
       router.push('/annotation-tool');
     } catch (error) {
       console.error('Error during upload:', error);
