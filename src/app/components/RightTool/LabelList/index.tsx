@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { useEffect, useRef } from 'react';
 import { Row, Col } from 'antd';
 import LabelItem from './LabelItem';
@@ -56,7 +57,7 @@ function LabelList() {
         Array.isArray(shapes[selDrawImageIndex]) &&
         shapes[selDrawImageIndex].map((item, index) => (
           <Col
-            key={item.d}
+            key={uuidv4()}
             xs={24}
             id={`label-item-${selDrawImageIndex}-${index}`}
             className="scroll-mt-8"

@@ -1,5 +1,6 @@
 import '../scss/TopBar.scss';
 import JSZip from 'jszip';
+import { v4 as uuidv4 } from 'uuid';
 import { ChangeEvent, useState } from 'react';
 import { message, Dropdown, Button, Tooltip } from 'antd';
 import {
@@ -16,7 +17,13 @@ import { IoMenuSharp } from 'react-icons/io5';
 import { FaRegQuestionCircle } from 'react-icons/fa';
 import { BiInfoCircle, BiFullscreen, BiExitFullscreen } from 'react-icons/bi';
 
-import { ANNOTATION_TYPES, IMAGE_TYPES, IMPORT_TYPES } from '@/constants';
+import {
+  ANNOTATION_TYPES,
+  IMAGE_TYPES,
+  IMPORT_TYPES,
+  MAX_FILE_SIZE,
+} from '@/constants';
+
 import {
   getURLExtension,
   imageSizeFactory,
@@ -25,6 +32,12 @@ import {
   generateYolo,
   fetchFileFromObjectUrl,
   generatePascalVoc,
+  parseXml,
+  detectAnnotationFormat,
+  parseYolo,
+  parsePascalVoc,
+  parseCoco,
+  getImageSizeFromUrl,
 } from '@/utils/general';
 
 import {
@@ -34,7 +47,9 @@ import {
   setSelShapeIndex,
   setSelDrawImageIndex,
 } from '@/lib/redux';
-import { ImageType } from '@/types/ImageType';
+import type { ImageType } from '@/types/ImageType';
+import type { AnnotationFile } from '@/types/AnnotationType';
+import Loading from './Loading';
 
 function TopBar() {
   const dispatch = useAppDispatch();
@@ -49,33 +64,18 @@ function TopBar() {
   } = state;
 
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const onFilesChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
 
-    const newFiles = Array.from(files).map(
-      file => new File([file], `${new Date().getTime()}$$${file.name}`)
-    );
-
-    const newImagesState: ImageType[] = [];
-
-    const formData = new FormData();
-    newFiles.forEach(image => {
-      formData.append('files', image);
-      newImagesState.push({
-        obj_url: URL.createObjectURL(image),
-        name: image.name,
-      });
+    const newImagesState = Array.from(files).map(img => {
+      return {
+        obj_url: URL.createObjectURL(img),
+        name: `${new Date().getTime()}$$${img.name}`,
+      };
     });
-
-    // const response = await axios.post(
-    //   'http://localhost:5000/api/detect',
-    //   formData,
-    //   {
-    //     headers: { 'Content-Type': 'multipart/form-data' },
-    //   }
-    // );
 
     const newImageFiles = [...imageFiles, ...newImagesState];
     const newImageSizes = newImageFiles.map((item, index) =>
@@ -99,64 +99,154 @@ function TopBar() {
     message.success(`Success to load ${msg}.`);
   };
 
-  const onFilesTxtChange = (event: ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files) return;
-    const files = [...event.target.files].filter(
-      file =>
-        ANNOTATION_TYPES.indexOf(getURLExtension(file.name).toLowerCase()) !==
-        -1
-    );
-
-    const msg =
-      files.length > 1 ? `${files.length} txt` : `${files.length} txt`;
-    message.success(`Success to load ${msg}.`);
-  };
-
   const onFilesAnnotationChange = async (
     event: ChangeEvent<HTMLInputElement>
   ) => {
     if (!event.target.files) return;
-    const filess = event.target.files[0];
-    //const msg = files.length > 1 ? `${files.length} zip` : `${files.length} zip`;
-    //message.success(`Success to load ${msg}.`);
-    //read zip
-    var jsZip = new JSZip();
-    let files: ImageType[] = [];
-    await jsZip.loadAsync(filess).then(async zip => {
-      // Extract files from the ZIP file
-      const promises = Object.keys(zip.files)
-        .filter(
-          filename =>
-            !zip.files[filename].dir &&
-            IMAGE_TYPES.includes(getURLExtension(filename).toLowerCase())
-        )
-        .map(async filename => {
-          const blob = await zip.files[filename].async('blob');
-          const obj_url = URL.createObjectURL(blob);
-          return {
-            obj_url,
-            name: filename,
-          } as ImageType;
-        });
-      files = await Promise.all(promises);
-    });
-    const newImageFiles = [...imageFiles, ...files];
-    const newImageSizes = newImageFiles.map((item, index) =>
+
+    setIsLoading(true);
+    const files = Array.from(event.target.files);
+    const msg =
+      files.length > 1 ? `${files.length} files` : `${files.length} file`;
+
+    const jsZip = new JSZip();
+    let images: ImageType[] = [];
+    let annotations: AnnotationFile[] = [];
+    let success = true;
+
+    for (const file of files) {
+      if (file.size > MAX_FILE_SIZE) {
+        message.error('File is too large');
+        setIsLoading(false);
+        return;
+      }
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      console.log(fileExtension);
+      switch (fileExtension) {
+        case 'zip':
+          // Extract files from the ZIP file
+          const zip = await jsZip.loadAsync(file);
+          const pathFiles = Object.keys(zip.files);
+          const imagePromises = pathFiles
+            .filter(
+              path =>
+                !zip.files[path].dir &&
+                IMAGE_TYPES.includes(getURLExtension(path).toLowerCase())
+            )
+            .map(async path => {
+              const blob = await zip.files[path].async('blob');
+              const obj_url = URL.createObjectURL(blob);
+              return {
+                obj_url,
+                name: `${new Date().getTime()}$$${path.split('/').pop()}`,
+              } as ImageType;
+            });
+
+          const annotationPromises = pathFiles
+            .filter(
+              path =>
+                !zip.files[path].dir &&
+                ANNOTATION_TYPES.includes(getURLExtension(path).toLowerCase())
+            )
+            .map(async path => {
+              const blob = await zip.files[path].async('blob');
+              const text = await new Response(blob).text();
+              return {
+                text,
+                name: path.split('/').pop(),
+              } as AnnotationFile;
+            });
+          const newImages = await Promise.all(imagePromises);
+          images = [...images, ...newImages];
+          const newAnnotations = await Promise.all(annotationPromises);
+          annotations = [...annotations, ...newAnnotations];
+          break;
+        case 'json':
+        case 'xml':
+        case 'txt':
+          annotations.push({
+            text: await file.text(),
+            name: file.name,
+          });
+          break;
+        default:
+          message.error('File type not supported');
+          success = false;
+          break;
+      }
+    }
+
+    const newImageFiles = [...imageFiles, ...images];
+    if (newImageFiles.length === 0) {
+      message.error('No image to annotate');
+      setIsLoading(false);
+      return;
+    }
+
+    const newImageSizes = newImageFiles.map((_, index) =>
       imageSizes[index] ? imageSizes[index] : imageSizeFactory({})
     );
-    const newShapes = newImageFiles.map((item, index) =>
+
+    const newShapes = newImageFiles.map((_, index) =>
       shapes[index] ? shapes[index] : []
     );
+
+    for (let i = 0; i < annotations.length; i++) {
+      const imgIndex = newImageFiles.findIndex(
+        img =>
+          img.name.split('$$').pop()?.split('.')[0] ===
+          annotations[i].name.split('$$').pop()?.split('.')[0]
+      );
+
+      const image = imgIndex !== -1 ? newImageFiles[imgIndex] : undefined;
+
+      if (!image) continue;
+
+      const fileExtension = annotations[i].name.split('.').pop()?.toLowerCase();
+      switch (fileExtension) {
+        case 'txt':
+          const format = detectAnnotationFormat(annotations[i].text);
+          switch (format) {
+            case 'YOLO':
+              const size = await getImageSizeFromUrl(image.obj_url);
+              newShapes[imgIndex] = await parseYolo(
+                annotations[i].text,
+                imageSizeFactory(size)
+              );
+              break;
+            case 'PASCAL_VOC':
+              newShapes[imgIndex] = await parsePascalVoc(annotations[i].text);
+              break;
+            case 'COCO':
+              newShapes[imgIndex] = await parseCoco(annotations[i].text);
+              break;
+            default:
+              break;
+          }
+          break;
+        case 'xml':
+          newShapes[imgIndex] = await parseXml(annotations[i].text);
+          break;
+        case 'json':
+          break;
+        default:
+          break;
+      }
+    }
+
     dispatch(
       setImageFiles({
         imageFiles: newImageFiles,
-        selDrawImageIndex: imageFiles.length ? selDrawImageIndex : 0,
+        selDrawImageIndex: selDrawImageIndex > 0 ? selDrawImageIndex : 0,
         imageSizes: newImageSizes,
         drawStatus,
         shapes: newShapes,
         selShapeIndex,
       })
     );
+
+    if (success) message.success(`Success to load ${msg}.`);
+    setIsLoading(false);
   };
 
   const onSaveClick = () => {
@@ -292,6 +382,7 @@ function TopBar() {
                 multiple
                 onChange={onFilesAnnotationChange}
                 style={{ display: 'none' }}
+                value={''}
               />
               <span className="save-icon">
                 <FileTextOutlined />
@@ -397,6 +488,11 @@ function TopBar() {
           </Tooltip>
         </div>
       </div>
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Loading />
+        </div>
+      )}
     </div>
   );
 }
