@@ -180,24 +180,29 @@ function DrawTool() {
     setMoreMenuVisible(false);
     setLoading(true);
 
-    const formData = new FormData();
-    const image = await fetchFileFromObjectUrl(
-      imageFiles[selDrawImageIndex].obj_url,
-      imageFiles[selDrawImageIndex].name
-    );
-    formData.append('files', image);
+    try {
+      const formData = new FormData();
+      const image = await fetchFileFromObjectUrl(
+        imageFiles[selDrawImageIndex].obj_url,
+        imageFiles[selDrawImageIndex].name
+      );
+      formData.append('files', image);
 
-    const response = await axios.post(
-      'http://localhost:5000/api/detect',
-      formData,
-      {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }
-    );
+      const response = await axios.post(
+        'http://localhost:5000/api/detect',
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
 
-    dispatch(setDetections([...listDetections, ...response.data]));
-    setLoading(false);
-    message.success('Auto annotation completed');
+      dispatch(setDetections([...listDetections, ...response.data]));
+      setLoading(false);
+      message.success('Auto annotation completed');
+    } catch (error) {
+      setLoading(false);
+      message.error('Auto annotation failed');
+    }
   };
 
   const handleUploadAnnotation = async (

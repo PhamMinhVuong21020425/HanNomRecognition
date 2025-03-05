@@ -341,10 +341,10 @@ export const parseXml = async (xmlStr: string): Promise<Shape[]> => {
   return objects.map((obj: any) => {
     const label = obj.label || '';
     const bndbox = obj.bndbox || {};
-    const x_min = parseFloat(bndbox.xmin) || 0;
-    const y_min = parseFloat(bndbox.ymin) || 0;
-    const x_max = parseFloat(bndbox.xmax) || 0;
-    const y_max = parseFloat(bndbox.ymax) || 0;
+    const x_min = parseInt(bndbox.xmin) || 0;
+    const y_min = parseInt(bndbox.ymin) || 0;
+    const x_max = parseInt(bndbox.xmax) || 0;
+    const y_max = parseInt(bndbox.ymax) || 0;
 
     return shapeFactoryTest(
       [
@@ -383,7 +383,7 @@ export const parseCoco = async (text: string): Promise<Shape[]> => {
     const parts = line.trim().split(/\s+/);
     if (parts.length === 5) {
       const label = parts[0];
-      const [_, x_min, y_min, width, height] = parts.map(parseFloat);
+      const [_, x_min, y_min, width, height] = parts.map(parseInt);
 
       shapes.push(
         shapeFactoryTest(
@@ -437,10 +437,10 @@ export const parseYolo = async (
       const [_, x_center, y_center, width, height] = parts.map(parseFloat);
 
       // Convert normalized coordinates to absolute coordinates
-      const x_min = (x_center - width / 2) * imageSize.width;
-      const y_min = (y_center - height / 2) * imageSize.height;
-      const x_max = (x_center + width / 2) * imageSize.width;
-      const y_max = (y_center + height / 2) * imageSize.height;
+      const x_min = Math.round((x_center - width / 2) * imageSize.width);
+      const y_min = Math.round((y_center - height / 2) * imageSize.height);
+      const x_max = Math.round((x_center + width / 2) * imageSize.width);
+      const y_max = Math.round((y_center + height / 2) * imageSize.height);
 
       shapes.push(
         shapeFactoryTest(
@@ -489,7 +489,7 @@ export const parsePascalVoc = async (text: string): Promise<Shape[]> => {
     const parts = line.trim().split(/\s+/);
     if (parts.length === 5) {
       const label = parts[0];
-      const [_, x_min, y_min, x_max, y_max] = parts.map(parseFloat);
+      const [_, x_min, y_min, x_max, y_max] = parts.map(parseInt);
 
       shapes.push(
         shapeFactoryTest(
@@ -579,7 +579,7 @@ export const detectAnnotationFormat = (fileContent: string) => {
     // Pascal VOC format: label, xmin, ymin, xmax, ymax
     if (firstLine.length !== 5) return false;
 
-    const [_, xmin, ymin, xmax, ymax] = firstLine.map(parseFloat);
+    const [_, xmin, ymin, xmax, ymax] = firstLine.map(parseInt);
 
     return xmin >= 0 && ymin >= 0 && xmin < xmax && ymin < ymax;
   };
@@ -589,7 +589,7 @@ export const detectAnnotationFormat = (fileContent: string) => {
     // COCO format typically: label, x, y, width, height
     if (firstLine.length !== 5) return false;
 
-    const [_, x, y, width, height] = firstLine.map(parseFloat);
+    const [_, x, y, width, height] = firstLine.map(parseInt);
 
     return x >= 0 && y >= 0 && width > 0 && height > 0;
   };
