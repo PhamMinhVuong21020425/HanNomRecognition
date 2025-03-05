@@ -1,3 +1,8 @@
+export type AnnotationFile = {
+  text: string;
+  name: string;
+};
+
 export type YoloFormat = {
   label: string;
   x_center: number;

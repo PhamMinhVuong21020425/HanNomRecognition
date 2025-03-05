@@ -803,7 +803,7 @@ function SVGWrapper() {
               shapes[selDrawImageIndex].map((shape, index) =>
                 !shape.visible ? null : (
                   <Tooltip
-                    key={shape.d}
+                    key={uuidv4()}
                     title={shape.label}
                     placement="top"
                     mouseEnterDelay={0}

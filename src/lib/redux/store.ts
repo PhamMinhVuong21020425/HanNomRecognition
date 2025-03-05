@@ -4,16 +4,7 @@ import {
   type ThunkAction,
   type Action,
 } from '@reduxjs/toolkit';
-import {
-  persistStore,
-  persistReducer,
-  FLUSH,
-  REHYDRATE,
-  PAUSE,
-  PERSIST,
-  PURGE,
-  REGISTER,
-} from 'redux-persist';
+import { persistStore, persistReducer } from 'redux-persist';
 import createWebStorage from 'redux-persist/lib/storage/createWebStorage';
 
 /* Instruments */
@@ -51,10 +42,7 @@ export const reduxStore = configureStore({
   reducer: persistedReducer,
   middleware: getDefaultMiddleware => {
     return getDefaultMiddleware({
-      serializableCheck: {
-        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-        ignoredPaths: ['files.images'],
-      },
+      serializableCheck: false,
     }).concat(loggerMiddleware);
   },
 });
