@@ -1,7 +1,7 @@
 import '../scss/TopBar.scss';
 import JSZip from 'jszip';
-import { v4 as uuidv4 } from 'uuid';
 import { ChangeEvent, useState } from 'react';
+import { shallowEqual } from 'react-redux';
 import { message, Dropdown, Button, Tooltip } from 'antd';
 import {
   FileImageOutlined,
@@ -46,6 +46,10 @@ import {
   setImageFiles,
   setSelShapeIndex,
   setSelDrawImageIndex,
+  selectImagesInfo,
+  selectDrawStatus,
+  selectShapes,
+  selectSelShapeIndex,
 } from '@/lib/redux';
 import type { ImageType } from '@/types/ImageType';
 import type { AnnotationFile } from '@/types/AnnotationType';
@@ -53,15 +57,13 @@ import Loading from './Loading';
 
 function TopBar() {
   const dispatch = useAppDispatch();
-  const state = useAppSelector(state => state.annotation);
-  const {
-    imageFiles,
-    selDrawImageIndex,
-    imageSizes,
-    drawStatus,
-    shapes,
-    selShapeIndex,
-  } = state;
+  const { imageFiles, selDrawImageIndex, imageSizes } = useAppSelector(
+    selectImagesInfo,
+    shallowEqual
+  );
+  const drawStatus = useAppSelector(selectDrawStatus);
+  const shapes = useAppSelector(selectShapes);
+  const selShapeIndex = useAppSelector(selectSelShapeIndex);
 
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

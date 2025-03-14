@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input } from 'antd';
+import { shallowEqual } from 'react-redux';
 
 import {
   fetchFileFromObjectUrl,
@@ -11,22 +12,25 @@ import {
   useAppDispatch,
   useAppSelector,
   setXmlPreviewBoxStatus,
+  selectImagesInfo,
+  selectShapes,
+  selectSelPreviewIndex,
+  selectXmlPreviewBoxVisible,
 } from '@/lib/redux';
 
 const { TextArea } = Input;
 
 function XMLPreviewBox() {
   const dispatch = useAppDispatch();
-  const state = useAppSelector(state => state.annotation);
   const [xml, setXml] = useState('');
 
-  const {
-    imageFiles,
-    imageSizes,
-    shapes,
-    selPreviewIndex,
-    xmlPreviewBoxVisible,
-  } = state;
+  const { imageFiles, imageSizes } = useAppSelector(
+    selectImagesInfo,
+    shallowEqual
+  );
+  const shapes = useAppSelector(selectShapes);
+  const selPreviewIndex = useAppSelector(selectSelPreviewIndex);
+  const xmlPreviewBoxVisible = useAppSelector(selectXmlPreviewBoxVisible);
 
   useEffect(() => {
     if (selPreviewIndex === -1) return;

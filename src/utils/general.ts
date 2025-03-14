@@ -10,11 +10,7 @@ import {
   DEFAULT_SAVE_FOLDER,
 } from '../constants';
 
-import type {
-  Coordinate,
-  Shape,
-  ImageSize,
-} from '../lib/redux/slices/annotationSlice/types';
+import type { Coordinate, Shape, ImageSize } from '../lib/redux';
 
 export const getImage = (imageUrl: string, fileName = 'image.jpg') =>
   new Promise((resolve, reject) => {
@@ -180,6 +176,7 @@ export const createPathFromPoints = (points: Coordinate[]) => {
 
   return path;
 };
+
 export const shapeFactoryTest = (paths: Coordinate[], label = '') => {
   const d = getSVGPathD(paths, true);
   return {

@@ -60,9 +60,6 @@ export type AnnotationState = {
   selDrawImageIndex: number;
   selImageIndexes: number[];
   imageSizes: ImageSize[];
-  txtFiles: any[][];
-  selDrawTxtIndex: number;
-  selTxtIndexes: number[];
   drawStyle: DrawStyle;
   drawStatus: string;
   selShapeType: string;
@@ -76,5 +73,4 @@ export type AnnotationState = {
   selPreviewIndex: number;
   xmlPreviewBoxVisible: boolean;
   urlBoxVisible: boolean;
-  isShowUpload: boolean;
 };
