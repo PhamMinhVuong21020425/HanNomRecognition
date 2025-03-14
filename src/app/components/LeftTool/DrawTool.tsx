@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { cloneDeep } from 'lodash';
+import { shallowEqual } from 'react-redux';
 import { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { Row, Col, Tooltip, Divider, message } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -23,7 +24,6 @@ import {
   deleteAllShapes,
   deleteSelShape,
   setDragImage,
-  setDrawStatus,
   setNotDragImage,
   setIsRotate,
   setSelShapeType,
@@ -33,6 +33,12 @@ import {
   selectDetections,
   setDetections,
   setSelShapeIndex,
+  selectImagesInfo,
+  selectShapes,
+  selectCurrentShape,
+  selectSelShapeIndex,
+  selectSelShapeType,
+  selectDrawStatus,
 } from '@/lib/redux';
 import { DRAW_STATUS_TYPES, SHAPE_TYPES, ANNOTATION_TYPES } from '@/constants';
 import {
@@ -61,18 +67,16 @@ function DrawTool() {
   const [loading, setLoading] = useState(false);
   const moreButtonRef = useRef<HTMLDivElement>(null);
   const listDetections = useAppSelector(selectDetections);
-  const state = useAppSelector(state => state.annotation);
 
-  const {
-    imageFiles,
-    imageSizes,
-    selDrawImageIndex,
-    selShapeType,
-    selShapeIndex,
-    drawStatus,
-    currentShape,
-    shapes,
-  } = state;
+  const { imageFiles, selDrawImageIndex, imageSizes } = useAppSelector(
+    selectImagesInfo,
+    shallowEqual
+  );
+  const shapes = useAppSelector(selectShapes);
+  const currentShape = useAppSelector(selectCurrentShape);
+  const selShapeIndex = useAppSelector(selectSelShapeIndex);
+  const selShapeType = useAppSelector(selectSelShapeType);
+  const drawStatus = useAppSelector(selectDrawStatus);
 
   // Track which tool is active
   const [activeTool, setActiveTool] = useState<ActiveToolType>(
@@ -121,16 +125,7 @@ function DrawTool() {
   };
 
   const onResetClick = () => {
-    const shapesCopy = cloneDeep(shapes);
-    shapesCopy[selDrawImageIndex] = shapesCopy[selDrawImageIndex]?.map(item => {
-      if (!item.isSelect) return item;
-      const itemCopy = cloneDeep(item);
-      itemCopy.isSelect = false;
-      return itemCopy;
-    });
-    dispatch(setShapes({ shapes: shapesCopy }));
     dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
-    dispatch(setDrawStatus({ drawStatus: DRAW_STATUS_TYPES.IDLE }));
   };
 
   const onSelShapeTypeChange = (shapeType: string) => {
@@ -144,6 +139,8 @@ function DrawTool() {
         dispatch(setIsRotate());
         break;
       case 'pointer':
+        dispatch(setNotDragImage());
+        break;
       case 'polygon':
       case 'rectangle':
         dispatch(setNotDragImage());

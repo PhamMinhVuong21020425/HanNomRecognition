@@ -1,12 +1,18 @@
-import { v4 as uuidv4 } from 'uuid';
 import { useEffect, useRef } from 'react';
 import { Row, Col } from 'antd';
 import LabelItem from './LabelItem';
-import { useAppSelector } from '@/lib/redux';
+import {
+  selectSelDrawImageIndex,
+  selectSelShapeIndex,
+  selectShapes,
+  useAppSelector,
+} from '@/lib/redux';
 
 function LabelList() {
-  const state = useAppSelector(state => state.annotation);
-  const { selDrawImageIndex, shapes, selShapeIndex } = state;
+  const selDrawImageIndex = useAppSelector(selectSelDrawImageIndex);
+  const shapes = useAppSelector(selectShapes);
+  const selShapeIndex = useAppSelector(selectSelShapeIndex);
+
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,7 +63,7 @@ function LabelList() {
         Array.isArray(shapes[selDrawImageIndex]) &&
         shapes[selDrawImageIndex].map((item, index) => (
           <Col
-            key={uuidv4()}
+            key={`label-item-${selDrawImageIndex}-${index}`}
             xs={24}
             id={`label-item-${selDrawImageIndex}-${index}`}
             className="scroll-mt-8"

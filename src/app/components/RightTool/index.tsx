@@ -1,3 +1,4 @@
+import { shallowEqual } from 'react-redux';
 import { Collapse } from 'antd';
 import { FileImageFilled } from '@ant-design/icons';
 import { faTag } from '@fortawesome/free-solid-svg-icons';
@@ -7,11 +8,14 @@ import ImageList from './ImageList';
 import ImageListSetting from './ImageList/ImageListSetting';
 import LabelList from './LabelList';
 import LabelListSetting from './LabelList/LabelListSetting';
-import { useAppSelector } from '@/lib/redux';
+import { selectImagesInfo, selectShapes, useAppSelector } from '@/lib/redux';
 
 function RightToolbar() {
-  const state = useAppSelector(state => state.annotation);
-  const { imageFiles, selDrawImageIndex, shapes } = state;
+  const { imageFiles, selDrawImageIndex } = useAppSelector(
+    selectImagesInfo,
+    shallowEqual
+  );
+  const shapes = useAppSelector(selectShapes);
 
   const items = [
     {

@@ -1,3 +1,4 @@
+import { shallowEqual } from 'react-redux';
 import { Dropdown, Button, message } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import {
@@ -7,6 +8,11 @@ import {
 } from '@/utils/general';
 import { DRAW_STATUS_TYPES } from '@/constants';
 import {
+  selectDrawStatus,
+  selectImagesInfo,
+  selectSelImageIndexes,
+  selectSelShapeIndex,
+  selectShapes,
   setImageFiles,
   setSelImageIndexes,
   useAppDispatch,
@@ -15,16 +21,14 @@ import {
 
 function ImageListSetting() {
   const dispatch = useAppDispatch();
-  const state = useAppSelector(state => state.annotation);
-  const {
-    imageFiles,
-    selDrawImageIndex,
-    selImageIndexes,
-    imageSizes,
-    drawStatus,
-    shapes,
-    selShapeIndex,
-  } = state;
+  const { imageFiles, selDrawImageIndex, imageSizes } = useAppSelector(
+    selectImagesInfo,
+    shallowEqual
+  );
+  const selImageIndexes = useAppSelector(selectSelImageIndexes);
+  const drawStatus = useAppSelector(selectDrawStatus);
+  const shapes = useAppSelector(selectShapes);
+  const selShapeIndex = useAppSelector(selectSelShapeIndex);
 
   const onSelectClick = (isAll: boolean) => {
     if (!isAll && selImageIndexes.length === 0) return;

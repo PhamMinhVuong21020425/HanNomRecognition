@@ -1,5 +1,6 @@
 import '../scss/SVGWrapper.scss';
 import { useEffect, useRef, useMemo, useState, MouseEvent } from 'react';
+import { shallowEqual } from 'react-redux';
 import { v4 as uuidv4 } from 'uuid';
 import { cloneDeep } from 'lodash';
 import { Tooltip } from 'antd';
@@ -28,9 +29,15 @@ import {
 } from '@/constants';
 
 import {
+  selectCurrentShape,
   selectDetections,
   selectDragStatus,
+  selectDrawingState,
+  selectImagesInfo,
   selectIsRotate,
+  selectSelLabelType,
+  selectSelShapeIndex,
+  selectShapes,
   setCurrentShape,
   setDrawStatus,
   setImageSizes,
@@ -41,11 +48,7 @@ import {
   useAppSelector,
 } from '@/lib/redux';
 
-import type {
-  Coordinate,
-  DrawStyle,
-  Shape,
-} from '@/lib/redux/slices/annotationSlice/types';
+import type { Coordinate, DrawStyle, Shape } from '@/lib/redux';
 
 let pointsX: number[] = [];
 let pointsY: number[] = [];
@@ -66,28 +69,26 @@ function SVGWrapper() {
     y: 0,
   });
   const dispatch = useAppDispatch();
-  const state = useAppSelector(state => state.annotation);
-  const {
-    imageFiles,
-    selDrawImageIndex,
-    imageSizes,
-    currentShape,
-    drawStyle,
-    drawStatus,
-    selShapeType,
-    selShapeIndex,
-    shapes,
-    selLabelType,
-  } = state;
-  const closePointRegion = CLOSE_POINT_REGION;
+  const { imageFiles, selDrawImageIndex, imageSizes } = useAppSelector(
+    selectImagesInfo,
+    shallowEqual
+  );
+  const { drawStyle, drawStatus, selShapeType } = useAppSelector(
+    selectDrawingState,
+    shallowEqual
+  );
+  const shapes = useAppSelector(selectShapes);
+  const currentShape = useAppSelector(selectCurrentShape);
+  const selShapeIndex = useAppSelector(selectSelShapeIndex);
+  const selLabelType = useAppSelector(selectSelLabelType);
   const dragStatus = useAppSelector(selectDragStatus);
+  const closePointRegion = CLOSE_POINT_REGION;
 
   const {
     shapeStyle,
     selShapeStyle,
     drawingShapePathStyle,
     drawingShapePointStyle,
-    labelStyle,
   } = drawStyle;
 
   const listDetections = useAppSelector(selectDetections);
@@ -105,6 +106,17 @@ function SVGWrapper() {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Hovered shape index
+  const [hoveredIndex, setHoveredIndex] = useState(-1);
+
+  const handleMouseEnter = (index: number) => {
+    setHoveredIndex(index);
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredIndex(-1);
+  };
 
   // Track if wheel events
   const lastWheelTimestamp = useRef(0);
@@ -802,24 +814,39 @@ function SVGWrapper() {
               Array.isArray(shapes[selDrawImageIndex]) &&
               shapes[selDrawImageIndex].map((shape, index) =>
                 !shape.visible ? null : (
-                  <Tooltip
-                    key={uuidv4()}
-                    title={shape.label}
-                    placement="top"
-                    mouseEnterDelay={0}
-                    mouseLeaveDelay={0}
-                    trigger="hover"
-                    arrow={true}
-                    color="#fff"
-                    styles={{
-                      body: {
-                        color: '#333',
-                        fontSize: '22px',
-                        padding: '8px 16px',
-                      },
-                    }}
+                  <g
+                    key={shape.d}
+                    onMouseEnter={() => handleMouseEnter(index)}
+                    onMouseLeave={handleMouseLeave}
                   >
-                    <g>
+                    {hoveredIndex === index ? (
+                      <Tooltip
+                        title={shape.label}
+                        placement="top"
+                        mouseEnterDelay={0}
+                        mouseLeaveDelay={0}
+                        trigger="hover"
+                        arrow={true}
+                        color="#fff"
+                        styles={{
+                          body: {
+                            color: '#333',
+                            fontSize: '22px',
+                            padding: '8px 16px',
+                          },
+                        }}
+                      >
+                        <path
+                          d={shape.d}
+                          style={
+                            shape.isSelect
+                              ? { ...selShapeStyle }
+                              : { ...shapeStyle }
+                          }
+                          onMouseUp={event => onShapeMouseUp(event, index)}
+                        />
+                      </Tooltip>
+                    ) : (
                       <path
                         d={shape.d}
                         style={
@@ -829,8 +856,8 @@ function SVGWrapper() {
                         }
                         onMouseUp={event => onShapeMouseUp(event, index)}
                       />
-                    </g>
-                  </Tooltip>
+                    )}
+                  </g>
                 )
               )}
           </svg>

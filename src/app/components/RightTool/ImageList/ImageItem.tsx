@@ -1,8 +1,14 @@
 import '@/app/scss/ImageItem.scss';
+import { shallowEqual } from 'react-redux';
 import { Row, Col, Checkbox, Space, Button, CheckboxChangeEvent } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { DRAW_STATUS_TYPES } from '@/constants';
 import {
+  selectDrawStatus,
+  selectImagesInfo,
+  selectSelImageIndexes,
+  selectSelShapeIndex,
+  selectShapes,
   setImageFiles,
   setSelDrawImageIndex,
   setSelImageIndexes,
@@ -20,16 +26,14 @@ type ImageItemProps = {
 function ImageItem(props: ImageItemProps) {
   const { index: fileIndex, name } = props;
   const dispatch = useAppDispatch();
-  const state = useAppSelector(state => state.annotation);
-  const {
-    imageFiles,
-    selDrawImageIndex,
-    selImageIndexes,
-    imageSizes,
-    drawStatus,
-    shapes,
-    selShapeIndex,
-  } = state;
+  const { imageFiles, selDrawImageIndex, imageSizes } = useAppSelector(
+    selectImagesInfo,
+    shallowEqual
+  );
+  const selImageIndexes = useAppSelector(selectSelImageIndexes);
+  const drawStatus = useAppSelector(selectDrawStatus);
+  const shapes = useAppSelector(selectShapes);
+  const selShapeIndex = useAppSelector(selectSelShapeIndex);
 
   const onCheckChange = (event: CheckboxChangeEvent) => {
     const set = new Set([...selImageIndexes]);

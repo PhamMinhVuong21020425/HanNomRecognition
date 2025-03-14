@@ -24,14 +24,6 @@ type SetImageFilesPayload = {
   selShapeIndex: number;
 };
 
-type SetTxtFilesPayload = {
-  txtFiles: any[][];
-  selDrawTxtIndex: number;
-  drawStatus: string;
-  shapes: Shape[][];
-  selShapeIndex: number;
-};
-
 type SetLabelBoxStatusPayload = {
   selLabelType: string;
   labelBoxVisible: boolean;
@@ -49,9 +41,6 @@ const initialState: AnnotationState = {
   selDrawImageIndex: -1,
   selImageIndexes: [],
   imageSizes: [],
-  txtFiles: [],
-  selDrawTxtIndex: -1,
-  selTxtIndexes: [],
   drawStyle: drawStyleFactory(0) as DrawStyle,
   drawStatus: DRAW_STATUS_TYPES.IDLE,
   selShapeType: SHAPE_TYPES.POINTER,
@@ -65,7 +54,6 @@ const initialState: AnnotationState = {
   selPreviewIndex: -1,
   xmlPreviewBoxVisible: false,
   urlBoxVisible: false,
-  isShowUpload: false,
 } satisfies AnnotationState as AnnotationState;
 
 /* Annotation Slice */
@@ -115,35 +103,6 @@ export const annotationSlice = createSlice({
       action: PayloadAction<{ selImageIndexes: number[] }>
     ) => {
       state.selImageIndexes = action.payload.selImageIndexes;
-    },
-
-    setTxtFiles: (state, action: PayloadAction<SetTxtFilesPayload>) => {
-      const { txtFiles, selDrawTxtIndex, drawStatus, shapes, selShapeIndex } =
-        action.payload;
-      state.txtFiles = txtFiles;
-      state.selDrawTxtIndex = selDrawTxtIndex;
-      state.selTxtIndexes = [];
-      state.drawStatus = drawStatus;
-      state.currentShape = null;
-      state.shapes = shapes;
-      state.selShapeIndex = selShapeIndex;
-    },
-
-    setSelDrawTxtIndex: (
-      state,
-      action: PayloadAction<{ selDrawTxtIndex: number }>
-    ) => {
-      state.selDrawTxtIndex = action.payload.selDrawTxtIndex;
-      state.drawStatus = DRAW_STATUS_TYPES.IDLE;
-      state.currentShape = null;
-      state.selShapeIndex = -1;
-    },
-
-    setSelTxtIndexes: (
-      state,
-      action: PayloadAction<{ selTxtIndexes: number[] }>
-    ) => {
-      state.selTxtIndexes = action.payload.selTxtIndexes;
     },
 
     setDrawStatus: (state, action: PayloadAction<{ drawStatus: string }>) => {
@@ -220,14 +179,14 @@ export const annotationSlice = createSlice({
           : DRAW_STATUS_TYPES.SELECT;
 
       if (state.selDrawImageIndex !== -1) {
-        state.shapes = state.shapes.map((item, index) => {
-          if (index !== state.selDrawImageIndex) return item;
-          return item.map((subItem, subIndex) => {
-            const newSubItem = cloneDeep(subItem);
-            newSubItem.isSelect = subIndex === selShapeIndex;
-            return newSubItem;
-          });
-        });
+        if (state.selShapeIndex !== -1) {
+          state.shapes[state.selDrawImageIndex][state.selShapeIndex].isSelect =
+            false;
+        }
+
+        if (selShapeIndex !== -1) {
+          state.shapes[state.selDrawImageIndex][selShapeIndex].isSelect = true;
+        }
       }
 
       state.selShapeIndex = selShapeIndex;
@@ -278,13 +237,6 @@ export const annotationSlice = createSlice({
         state.selShapeIndex = -1;
       }
     },
-
-    setShowUploadModal: (
-      state,
-      action: PayloadAction<{ isShowUpload: boolean }>
-    ) => {
-      state.isShowUpload = action.payload.isShowUpload;
-    },
   },
 });
 
@@ -293,9 +245,6 @@ export const {
   setSelDrawImageIndex,
   setImageSizes,
   setSelImageIndexes,
-  setTxtFiles,
-  setSelDrawTxtIndex,
-  setSelTxtIndexes,
   setDrawStatus,
   setSelShapeType,
   setLabelBoxStatus,
@@ -311,7 +260,6 @@ export const {
   setSelLabelType,
   deleteSelShape,
   deleteAllShapes,
-  setShowUploadModal,
 } = annotationSlice.actions;
 
 export const annotationReducer = annotationSlice.reducer;

@@ -1,5 +1,6 @@
 import '@/app/scss/FileImport.scss';
 import { ChangeEvent } from 'react';
+import { shallowEqual } from 'react-redux';
 import { message } from 'antd';
 import { IMAGE_TYPES } from '@/constants';
 import {
@@ -10,6 +11,10 @@ import {
   fetchFileFromObjectUrl,
 } from '@/utils/general';
 import {
+  selectDrawStatus,
+  selectImagesInfo,
+  selectSelShapeIndex,
+  selectShapes,
   setImageFiles,
   setSelDrawImageIndex,
   setSelShapeIndex,
@@ -20,15 +25,13 @@ import {
 
 function FileImport() {
   const dispatch = useAppDispatch();
-  const state = useAppSelector(state => state.annotation);
-  const {
-    imageFiles,
-    selDrawImageIndex,
-    imageSizes,
-    drawStatus,
-    shapes,
-    selShapeIndex,
-  } = state;
+  const { imageFiles, selDrawImageIndex, imageSizes } = useAppSelector(
+    selectImagesInfo,
+    shallowEqual
+  );
+  const shapes = useAppSelector(selectShapes);
+  const selShapeIndex = useAppSelector(selectSelShapeIndex);
+  const drawStatus = useAppSelector(selectDrawStatus);
 
   const onFilesChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files) return;

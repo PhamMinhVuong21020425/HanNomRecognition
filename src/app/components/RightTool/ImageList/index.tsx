@@ -1,10 +1,9 @@
 import { Row, Col } from 'antd';
 import ImageItem from './ImageItem';
-import { useAppSelector } from '@/lib/redux';
+import { selectImageFiles, useAppSelector } from '@/lib/redux';
 
 function ImageList() {
-  const state = useAppSelector(state => state.annotation);
-  const { imageFiles } = state;
+  const imageFiles = useAppSelector(selectImageFiles);
 
   return (
     <Row className="max-h-[250px]" justify="start" style={{ overflow: 'auto' }}>
