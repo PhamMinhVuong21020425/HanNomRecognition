@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { shallowEqual } from 'react-redux';
-import { Dropdown, Button, message } from 'antd';
+import { Dropdown, Button, message, Modal } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import {
   generateXML,
@@ -29,6 +30,7 @@ function ImageListSetting() {
   const drawStatus = useAppSelector(selectDrawStatus);
   const shapes = useAppSelector(selectShapes);
   const selShapeIndex = useAppSelector(selectSelShapeIndex);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const onSelectClick = (isAll: boolean) => {
     if (!isAll && selImageIndexes.length === 0) return;
@@ -77,6 +79,10 @@ function ImageListSetting() {
 
   const onClearAllClick = () => {
     if (imageFiles.length === 0) return;
+    setIsModalOpen(true);
+  };
+
+  const handleConfirmClearAll = () => {
     dispatch(
       setImageFiles({
         imageFiles: [],
@@ -87,6 +93,11 @@ function ImageListSetting() {
         selShapeIndex: -1,
       })
     );
+    setIsModalOpen(false);
+  };
+
+  const handleCancelClearAll = () => {
+    setIsModalOpen(false);
   };
 
   const onSaveSelectClick = async () => {
@@ -144,41 +155,58 @@ function ImageListSetting() {
     {
       key: '3',
       label: (
-        <Button type="text" size="small" onClick={onClearSelectClick}>
-          Clear Select
-        </Button>
-      ),
-    },
-    {
-      key: '4',
-      label: (
-        <Button type="text" size="small" onClick={onClearAllClick}>
-          Clear All
-        </Button>
-      ),
-    },
-    {
-      key: '5',
-      label: (
         <Button type="text" size="small" onClick={onSaveSelectClick}>
           Save Select
         </Button>
       ),
     },
     {
-      key: '6',
+      key: '4',
       label: (
         <Button type="text" size="small" onClick={onSaveAllClick}>
           Save All
         </Button>
       ),
     },
+    {
+      key: '5',
+      label: (
+        <Button type="text" size="small" onClick={onClearSelectClick}>
+          Clear Select
+        </Button>
+      ),
+    },
+    {
+      key: '6',
+      label: (
+        <Button type="text" size="small" onClick={onClearAllClick}>
+          Clear All
+        </Button>
+      ),
+    },
   ];
 
   return (
-    <Dropdown menu={{ items }} placement="bottomRight" arrow>
-      <SettingOutlined />
-    </Dropdown>
+    <>
+      <Dropdown menu={{ items }} placement="bottomRight" arrow>
+        <SettingOutlined />
+      </Dropdown>
+
+      <Modal
+        title="Clear All Images"
+        open={isModalOpen}
+        onOk={handleConfirmClearAll}
+        onCancel={handleCancelClearAll}
+        okText="Clear All"
+        okButtonProps={{ danger: true }}
+        cancelText="Cancel"
+      >
+        <p>
+          Are you sure you want to clear all images? This action cannot be
+          undone.
+        </p>
+      </Modal>
+    </>
   );
 }
 
