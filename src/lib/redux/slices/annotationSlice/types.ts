@@ -73,4 +73,5 @@ export type AnnotationState = {
   selPreviewIndex: number;
   xmlPreviewBoxVisible: boolean;
   urlBoxVisible: boolean;
+  textCopyBoxVisible: boolean;
 };

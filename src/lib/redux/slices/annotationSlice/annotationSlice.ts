@@ -1,6 +1,5 @@
 /* Core */
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { cloneDeep } from 'lodash';
 
 /* Instruments */
 import {
@@ -54,6 +53,7 @@ const initialState: AnnotationState = {
   selPreviewIndex: -1,
   xmlPreviewBoxVisible: false,
   urlBoxVisible: false,
+  textCopyBoxVisible: false,
 } satisfies AnnotationState as AnnotationState;
 
 /* Annotation Slice */
@@ -237,6 +237,13 @@ export const annotationSlice = createSlice({
         state.selShapeIndex = -1;
       }
     },
+
+    setTextCopyBoxVisible: (
+      state,
+      action: PayloadAction<{ textCopyBoxVisible: boolean }>
+    ) => {
+      state.textCopyBoxVisible = action.payload.textCopyBoxVisible;
+    },
   },
 });
 
@@ -260,6 +267,7 @@ export const {
   setSelLabelType,
   deleteSelShape,
   deleteAllShapes,
+  setTextCopyBoxVisible,
 } = annotationSlice.actions;
 
 export const annotationReducer = annotationSlice.reducer;
