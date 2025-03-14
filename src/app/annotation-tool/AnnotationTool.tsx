@@ -7,6 +7,7 @@ import LeftToolbar from '../components/LeftTool';
 import LabelBox from '../components/LabelBox';
 import RightToolbar from '../components/RightTool';
 import XMLPreviewBox from '../components/XMLPreviewBox';
+import TextCopyBox from '../components/TextCopyBox';
 import TopBar from '../components/TopBar';
 import ToolHeader from '../components/ToolHeader';
 import Footer from '../components/Footer';
@@ -68,6 +69,7 @@ function AnnotationTool() {
             </Col>
             <LabelBox />
             <XMLPreviewBox />
+            <TextCopyBox />
           </Row>
         </Col>
       </Row>

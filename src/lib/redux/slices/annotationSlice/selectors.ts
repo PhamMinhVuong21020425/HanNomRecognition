@@ -77,3 +77,6 @@ export const selectXmlPreviewBoxVisible = (state: ReduxState) =>
 
 export const selectUrlBoxVisible = (state: ReduxState) =>
   state.annotation.urlBoxVisible;
+
+export const selectTextCopyBoxVisible = (state: ReduxState) =>
+  state.annotation.textCopyBoxVisible;
