@@ -7,6 +7,14 @@ import { getSVGPathD } from '@/utils/general';
 import { LABEL_STATUS_TYPES } from '@/constants';
 import { DeleteOutlined } from '@ant-design/icons';
 import {
+  selectCurrentShape,
+  selectLabelBoxStatus,
+  selectLabelBoxVisible,
+  selectLabelTypes,
+  selectSelDrawImageIndex,
+  selectSelLabelType,
+  selectSelShapeIndex,
+  selectShapes,
   setCurrentShape,
   setLabelBoxStatus,
   setLabelTypes,
@@ -18,17 +26,15 @@ import {
 
 function LabelBox() {
   const dispatch = useAppDispatch();
-  const state = useAppSelector(state => state.annotation);
-  const {
-    selDrawImageIndex,
-    currentShape,
-    shapes,
-    selShapeIndex,
-    selLabelType,
-    labelBoxStatus,
-    labelBoxVisible,
-    labelTypes,
-  } = state;
+  const selDrawImageIndex = useAppSelector(selectSelDrawImageIndex);
+  const shapes = useAppSelector(selectShapes);
+  const currentShape = useAppSelector(selectCurrentShape);
+  const selShapeIndex = useAppSelector(selectSelShapeIndex);
+  const selLabelType = useAppSelector(selectSelLabelType);
+  const labelBoxStatus = useAppSelector(selectLabelBoxStatus);
+  const labelBoxVisible = useAppSelector(selectLabelBoxVisible);
+  const labelTypes = useAppSelector(selectLabelTypes);
+
   const draggleRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<InputRef | null>(null);
   const [currentLabelType, setCurrentLabelType] = useState('');

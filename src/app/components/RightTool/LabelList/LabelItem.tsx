@@ -9,6 +9,9 @@ import {
 } from '@ant-design/icons';
 import { LABEL_STATUS_TYPES } from '@/constants';
 import {
+  selectSelDrawImageIndex,
+  selectSelShapeIndex,
+  selectShapes,
   setCurrentShape,
   setLabelBoxStatus,
   setSelShapeIndex,
@@ -26,8 +29,9 @@ type LabelItemProps = {
 function LabelItem(props: LabelItemProps) {
   const { index, label, visible } = props;
   const dispatch = useAppDispatch();
-  const state = useAppSelector(state => state.annotation);
-  const { selDrawImageIndex, shapes, selShapeIndex } = state;
+  const selDrawImageIndex = useAppSelector(selectSelDrawImageIndex);
+  const shapes = useAppSelector(selectShapes);
+  const selShapeIndex = useAppSelector(selectSelShapeIndex);
 
   const onItemClick = () => {
     dispatch(

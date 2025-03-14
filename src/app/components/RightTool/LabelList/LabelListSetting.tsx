@@ -3,6 +3,9 @@ import { Dropdown, Button } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import {
   deleteAllShapes,
+  selectSelDrawImageIndex,
+  selectSelShapeIndex,
+  selectShapes,
   setSelShapeIndex,
   setShapes,
   useAppDispatch,
@@ -11,8 +14,9 @@ import {
 
 function LabelListSetting() {
   const dispatch = useAppDispatch();
-  const state = useAppSelector(state => state.annotation);
-  const { selDrawImageIndex, shapes, selShapeIndex } = state;
+  const selDrawImageIndex = useAppSelector(selectSelDrawImageIndex);
+  const shapes = useAppSelector(selectShapes);
+  const selShapeIndex = useAppSelector(selectSelShapeIndex);
 
   const onShowAllClick = (visible: boolean) => {
     if (shapes[selDrawImageIndex]?.length === 0) return;

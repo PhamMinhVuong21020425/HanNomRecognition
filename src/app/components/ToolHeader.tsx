@@ -1,6 +1,7 @@
 import '../scss/ToolHeader.scss';
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
+import { shallowEqual } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { FormattedMessage } from 'react-intl';
 import { message, Button, Avatar, Dropdown, Space, Modal } from 'antd';
@@ -24,6 +25,10 @@ import {
   setImageFiles,
   selectImagesRedux,
   selectUser,
+  selectImagesInfo,
+  selectDrawStatus,
+  selectShapes,
+  selectSelShapeIndex,
 } from '@/lib/redux';
 import { imageSizeFactory } from '@/utils/general';
 
@@ -31,15 +36,13 @@ function ToolHeader() {
   const router = useRouter();
   const userData = useAppSelector(selectUser);
   const dispatch = useAppDispatch();
-  const state = useAppSelector(state => state.annotation);
-  const {
-    imageFiles,
-    selDrawImageIndex,
-    imageSizes,
-    drawStatus,
-    shapes,
-    selShapeIndex,
-  } = state;
+  const { imageFiles, selDrawImageIndex, imageSizes } = useAppSelector(
+    selectImagesInfo,
+    shallowEqual
+  );
+  const drawStatus = useAppSelector(selectDrawStatus);
+  const shapes = useAppSelector(selectShapes);
+  const selShapeIndex = useAppSelector(selectSelShapeIndex);
 
   const files = useAppSelector(selectImagesRedux);
   const isFirstRender = useRef(true);
