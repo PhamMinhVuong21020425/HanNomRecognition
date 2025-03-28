@@ -6,25 +6,29 @@ export async function middleware(req: NextRequest) {
 
   const sessionCookie = req.cookies.get('connect.sid');
 
-  const response = await fetch(`${process.env.BACKEND_URL}/be/auth`, {
-    credentials: 'include',
-    headers: {
-      Cookie: `connect.sid=${sessionCookie?.value}`,
-    },
-  });
+  try {
+    const response = await fetch(`${process.env.BACKEND_URL}/be/auth`, {
+      credentials: 'include',
+      headers: {
+        Cookie: `connect.sid=${sessionCookie?.value}`,
+      },
+    });
 
-  const session = await response.json();
+    const session = await response.json();
 
-  if (
-    !session.user &&
-    requestUrl.pathname !== '/' &&
-    requestUrl.pathname !== '/import' &&
-    requestUrl.pathname !== '/annotation-tool' &&
-    requestUrl.pathname !== '/documentation' &&
-    requestUrl.pathname !== '/about-us' &&
-    requestUrl.pathname !== '/contact'
-  ) {
-    return NextResponse.redirect(`${requestUrl.origin}/auth/login`);
+    if (
+      !session.user &&
+      requestUrl.pathname !== '/' &&
+      requestUrl.pathname !== '/import' &&
+      requestUrl.pathname !== '/annotation-tool' &&
+      requestUrl.pathname !== '/documentation' &&
+      requestUrl.pathname !== '/about-us' &&
+      requestUrl.pathname !== '/contact'
+    ) {
+      return NextResponse.redirect(`${requestUrl.origin}/auth/login`);
+    }
+  } catch (error) {
+    console.error(error);
   }
 
   return NextResponse.next();

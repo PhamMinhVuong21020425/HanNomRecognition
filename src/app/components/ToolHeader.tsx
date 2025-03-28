@@ -1,22 +1,35 @@
 import '../scss/ToolHeader.scss';
 import Link from 'next/link';
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { shallowEqual } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { FormattedMessage } from 'react-intl';
-import { message, Button, Avatar, Dropdown, Space, Modal } from 'antd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  message,
+  Button,
+  Avatar,
+  Dropdown,
+  Space,
+  Modal,
+  MenuProps,
+  notification,
+} from 'antd';
+
 import {
   faUser,
   faHome,
-  faProjectDiagram,
-  faTasks,
+  faObjectGroup,
   faRobot,
-  faSignOutAlt,
+  faFlask,
   faCaretDown,
   faSquarePen,
   faKey,
   faRightFromBracket,
+  faBell,
+  faChartLine,
+  faProjectDiagram,
+  faTrash,
 } from '@fortawesome/free-solid-svg-icons';
 
 import {
@@ -31,9 +44,17 @@ import {
   selectSelShapeIndex,
 } from '@/lib/redux';
 import { imageSizeFactory } from '@/utils/general';
+import { NotificationType } from '@/types/NotificationType';
+import TrainingModal from './TrainingModal';
+import ActiveLearningModal from './ActiveLearningModal';
 
 function ToolHeader() {
   const router = useRouter();
+  const [isTrainModalVisible, setIsTrainModalVisible] = useState(false);
+  const [isALModalVisible, setIsALModalVisible] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationType[]>([]);
+  const [activeTab, setActiveTab] = useState('detection');
+
   const userData = useAppSelector(selectUser);
   const dispatch = useAppDispatch();
   const { imageFiles, selDrawImageIndex, imageSizes } = useAppSelector(
@@ -46,6 +67,23 @@ function ToolHeader() {
 
   const files = useAppSelector(selectImagesRedux);
   const isFirstRender = useRef(true);
+
+  const modelMenuItems = [
+    {
+      key: '1',
+      label: 'Default Model',
+    },
+    {
+      key: '2',
+      label: 'Custom Model 1',
+    },
+    {
+      key: '3',
+      label: 'Custom Model 2',
+    },
+  ];
+
+  const [selectedModel, setSelectedModel] = useState(modelMenuItems[0]);
 
   useEffect(() => {
     if (!isFirstRender.current) return;
@@ -79,12 +117,64 @@ function ToolHeader() {
 
   const handleGoHome = () => {
     Modal.confirm({
-      title: 'Xác nhận thoát',
-      content: 'Chắc chắn thoát? Dữ liệu có thể không được lưu!',
-      okText: 'Thoát',
-      cancelText: 'Hủy',
+      title: 'Confirm Exit',
+      content:
+        'Are you sure you want to go back to the Home page? Data may not be saved!',
+      okText: 'OK',
+      cancelText: 'Cancel',
       onOk: () => router.push('/'),
     });
+  };
+
+  const handleGoModel = () => {
+    Modal.confirm({
+      title: 'Confirm Exit',
+      content:
+        'Are you sure you want to go to the Model page? Data may not be saved!',
+      okText: 'OK',
+      cancelText: 'Cancel',
+      onOk: () => router.push('/your-model'),
+    });
+  };
+
+  const handleMenuClick: MenuProps['onClick'] = e => {
+    const selected = modelMenuItems.find(item => item.key === e.key);
+    if (selected) {
+      setSelectedModel(selected);
+    }
+  };
+
+  const handleTrain = () => {
+    setIsTrainModalVisible(true);
+  };
+
+  const handleActiveLearning = () => {
+    setIsALModalVisible(true);
+  };
+
+  const openNotification = (
+    notificationData: Omit<NotificationType, 'key' | 'time'>
+  ) => {
+    const key = `open${Date.now()}`;
+    const newNotification: NotificationType = {
+      key,
+      ...notificationData,
+      time: new Date(),
+    };
+
+    notification.open({
+      message: newNotification.title,
+      description: newNotification.description,
+      type: newNotification.status,
+      duration: 5,
+    });
+
+    // Add to notifications list
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
   };
 
   const userMenuItems = [
@@ -130,21 +220,6 @@ function ToolHeader() {
     },
   ];
 
-  const modelMenuItems = [
-    {
-      key: '1',
-      label: 'Default Model',
-    },
-    {
-      key: '2',
-      label: 'Custom Model 1',
-    },
-    {
-      key: '3',
-      label: 'Custom Model 2',
-    },
-  ];
-
   return (
     <div className="tool-header-container">
       <div className="left-header">
@@ -158,42 +233,151 @@ function ToolHeader() {
         </div>
 
         <div className="navigation">
-          <div className="nav-item" onClick={handleGoHome}>
+          <div
+            className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('home');
+              handleGoHome();
+            }}
+          >
             <FontAwesomeIcon icon={faHome} className="nav-icon" />
             <span className="nav-text">Home</span>
           </div>
 
-          <Link href="/projects" className="nav-item">
-            <FontAwesomeIcon icon={faProjectDiagram} className="nav-icon" />
-            <span className="nav-text">Projects</span>
-          </Link>
-
-          <Link href="/tasks" className="nav-item">
-            <FontAwesomeIcon icon={faTasks} className="nav-icon" />
-            <span className="nav-text">Tasks</span>
-          </Link>
-
-          <Link href="/models" className="nav-item">
+          <div
+            className={`nav-item ${activeTab === 'model' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('model');
+              handleGoModel();
+            }}
+          >
             <FontAwesomeIcon icon={faRobot} className="nav-icon" />
-            <span className="nav-text">Models</span>
-          </Link>
+            <span className="nav-text">Model</span>
+          </div>
+
+          <div
+            className={`nav-item ${activeTab === 'detection' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('detection');
+            }}
+          >
+            <FontAwesomeIcon icon={faObjectGroup} className="nav-icon" />
+            <span className="nav-text">Detection</span>
+          </div>
+
+          <div
+            className={`nav-item ${activeTab === 'classification' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('classification');
+            }}
+          >
+            <FontAwesomeIcon icon={faProjectDiagram} className="nav-icon" />
+            <span className="nav-text">Classification</span>
+          </div>
         </div>
       </div>
 
       <div className="right-header">
+        {/* Notifications Dropdown */}
         <Dropdown
-          menu={{ items: modelMenuItems }}
+          dropdownRender={() => (
+            <div className="notifications-dropdown">
+              <div className="notifications-header">
+                <span>Notifications</span>
+                {notifications.length > 0 && (
+                  <Button
+                    type="text"
+                    size="small"
+                    onClick={clearNotifications}
+                    className="clear-btn"
+                  >
+                    <FontAwesomeIcon icon={faTrash} className="nav-icon" />
+                  </Button>
+                )}
+              </div>
+              {notifications.length === 0 ? (
+                <div className="no-notifications">No new notifications</div>
+              ) : (
+                notifications.map(notification => (
+                  <div
+                    key={notification.key}
+                    className={`notification-item notification-${notification.status}`}
+                  >
+                    <div className="notification-content">
+                      <div className="notification-title">
+                        {notification.title}
+                      </div>
+                      <div className="notification-description">
+                        {notification.description}
+                      </div>
+                      <div className="notification-time">
+                        {notification.time.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+          trigger={['click']}
+          placement="bottomRight"
+        >
+          <Button
+            icon={<FontAwesomeIcon icon={faBell} />}
+            className="notifications-button"
+          >
+            {notifications.length > 0 && (
+              <span className="notification-badge">{notifications.length}</span>
+            )}
+          </Button>
+        </Dropdown>
+
+        {/* Train Button */}
+        <Button
+          icon={<FontAwesomeIcon icon={faFlask} />}
+          onClick={handleTrain}
+          className="train-button"
+          type="primary"
+        >
+          Train
+        </Button>
+
+        {/* Active Learning Button (only for Classification tab) */}
+        {activeTab === 'classification' && (
+          <Button
+            icon={<FontAwesomeIcon icon={faChartLine} />}
+            onClick={handleActiveLearning}
+            className="active-learning-button"
+            type="default"
+          >
+            Active Learning
+          </Button>
+        )}
+
+        {/* Model Selector Dropdown */}
+        <Dropdown
+          menu={{
+            items: modelMenuItems.map(item => ({
+              ...item,
+              style:
+                item.key === selectedModel.key
+                  ? { backgroundColor: '#dbeafe' }
+                  : {},
+            })),
+            onClick: handleMenuClick,
+          }}
           placement="bottomRight"
           trigger={['click']}
         >
           <Button className="model-selector" type="default">
             <Space>
-              Default Model
+              {selectedModel.label}
               <FontAwesomeIcon icon={faCaretDown} />
             </Space>
           </Button>
         </Dropdown>
 
+        {/* User Profile Section */}
         {userData ? (
           <Dropdown
             menu={{ items: userMenuItems }}
@@ -216,17 +400,21 @@ function ToolHeader() {
             <span>Login</span>
           </Link>
         )}
-
-        <Button
-          type="primary"
-          danger
-          icon={<FontAwesomeIcon icon={faSignOutAlt} />}
-          onClick={handleGoHome}
-          className="exit-button"
-        >
-          <span className="exit-text">Exit</span>
-        </Button>
       </div>
+
+      {/* Training Modal */}
+      <TrainingModal
+        visible={isTrainModalVisible}
+        setVisible={setIsTrainModalVisible}
+        openNotification={openNotification}
+      />
+
+      {/* Active Learning Modal */}
+      <ActiveLearningModal
+        visible={isALModalVisible}
+        setVisible={setIsALModalVisible}
+        openNotification={openNotification}
+      />
     </div>
   );
 }
