@@ -155,7 +155,6 @@ function ImportImage() {
       router.push('/annotation-tool');
     } catch (error) {
       console.error('Error during upload:', error);
-    } finally {
       setIsLoading(false);
     }
   };
