@@ -708,14 +708,7 @@ function SVGWrapper() {
       return imageWithoutEx === imageNameNew;
     });
 
-    const listBoxes = result
-      ? result.objects_detection
-          .filter(obj => obj.confidence > 0.2)
-          .map(obj => ({
-            coordinates: obj.coordinates,
-            name: obj.class,
-          }))
-      : [];
+    const listBoxes = result ? result.objects_detection : [];
 
     // let listShape = listObject
     //     .filter((obj) => obj.image_name === imageName)

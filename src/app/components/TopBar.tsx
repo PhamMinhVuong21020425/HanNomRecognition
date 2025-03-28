@@ -89,7 +89,7 @@ function TopBar() {
     dispatch(
       setImageFiles({
         imageFiles: newImageFiles,
-        selDrawImageIndex: selDrawImageIndex > 0 ? selDrawImageIndex : 0,
+        selDrawImageIndex: imageFiles.length > 0 ? imageFiles.length : 0,
         imageSizes: newImageSizes,
         drawStatus,
         shapes: newShapes,
