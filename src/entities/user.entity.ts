@@ -1,5 +1,9 @@
 import * as bcrypt from 'bcrypt';
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Model } from './model.entity';
+import { Dataset } from './dataset.entity';
+import { Notification } from './notification.entity';
+import { TrainingJob } from './training_job.entity';
 import { UserRole } from '../enums/UserRole';
 import { AuthType } from '../enums/AuthType';
 
@@ -60,6 +64,18 @@ export class User {
 
   @Column({ nullable: false, default: true })
   isActivate: boolean;
+
+  @OneToMany(() => Model, model => model.user)
+  models: Model[];
+
+  @OneToMany(() => Dataset, dataset => dataset.user)
+  datasets: Dataset[];
+
+  @OneToMany(() => Notification, notification => notification.user)
+  notifications: Notification[];
+
+  @OneToMany(() => TrainingJob, trainingJob => trainingJob.user)
+  trainingJobs: TrainingJob[];
 
   constructor(partial?: Partial<User>) {
     Object.assign(this, partial);
