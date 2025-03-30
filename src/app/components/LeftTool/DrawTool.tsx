@@ -186,7 +186,7 @@ function DrawTool() {
       formData.append('files', image);
 
       const response = await axios.post(
-        'http://localhost:5000/api/detect',
+        `${process.env.NEXT_PUBLIC_FLASK_API}/api/detect`,
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },

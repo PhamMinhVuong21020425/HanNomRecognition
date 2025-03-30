@@ -6,6 +6,7 @@
 
 import app from '../index';
 import NextRenderer from '../config/next-render';
+import { initSocketIO } from '../config/socket-io';
 import debugLogger from 'debug';
 import http from 'http';
 
@@ -23,6 +24,12 @@ app.set('port', port);
  */
 
 const server = http.createServer(app);
+
+/**
+ * Initialize Socket.IO
+ */
+
+initSocketIO(server);
 
 /**
  * Listen on provided port, on all network interfaces.
