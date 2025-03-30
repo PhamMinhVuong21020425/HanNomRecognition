@@ -15,6 +15,7 @@ import indexRouter from './routes/index';
 import 'reflect-metadata';
 import { AppDataSource } from './config/data-source';
 import NextRenderer from './config/next-render';
+import startWorker from './worker';
 import { User } from './entities/user.entity';
 import { THREE_HOURS } from './constants';
 
@@ -34,6 +35,15 @@ AppDataSource.initialize()
   })
   .catch((err: Error | unknown) => {
     console.error('Error during Data Source initialization:', err);
+  });
+
+// start the worker
+startWorker()
+  .then(() => {
+    console.log('Worker started successfully!');
+  })
+  .catch((err: Error | unknown) => {
+    console.error('Error starting worker:', err);
   });
 
 // create and setup express app

@@ -25,6 +25,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@reduxjs/toolkit": "^2.5.0",
+    "amqplib": "^0.10.5",
     "antd": "^5.24.2",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
@@ -65,12 +66,15 @@
     "reflect-metadata": "^0.2.2",
     "sass": "^1.83.4",
     "slick-carousel": "^1.8.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "typeorm": "^0.3.20"
   },
   "devDependencies": {
     "@eslint/compat": "^1.1.1",
     "@eslint/js": "^9.7.0",
     "@prettier/plugin-pug": "^3.0.0",
+    "@types/amqplib": "^0.10.7",
     "@types/bcrypt": "^5.0.2",
     "@types/cookie-parser": "^1.4.7",
     "@types/cors": "^2.8.17",
