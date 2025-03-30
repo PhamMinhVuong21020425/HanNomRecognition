@@ -11,6 +11,12 @@ import {
 } from '../constants';
 
 import type { Coordinate, Shape, ImageSize } from '../lib/redux';
+import type {
+  CocoAnnotation,
+  CocoCategory,
+  CocoImage,
+  CocoDataset,
+} from '@/types/CocoTypes';
 
 export const getImage = (imageUrl: string, fileName = 'image.jpg') =>
   new Promise((resolve, reject) => {
@@ -44,13 +50,12 @@ export const getImage = (imageUrl: string, fileName = 'image.jpg') =>
     };
   });
 
-export const getImageSizeFromUrl = (
-  imageUrl: string
-): Promise<{ width: number; height: number }> =>
+export const getImageSizeFromUrl = (imageUrl: string): Promise<ImageSize> =>
   new Promise((resolve, reject) => {
     const img = new Image();
     img.src = imageUrl;
-    img.onload = () => resolve({ width: img.width, height: img.height });
+    img.onload = () =>
+      resolve({ width: img.width, height: img.height, depth: 3 });
     img.onerror = err => reject(err);
   });
 
@@ -211,7 +216,7 @@ export const annotationFactory = (file: File) => ({
   object: [] as any[],
 });
 
-export const annotationCocoTxt = (label_in: string, paths: Coordinate[]) => {
+export const annotationCocoJson = (label_in: string, paths: Coordinate[]) => {
   const x_min = paths.reduce(
     (acc, cur) => (acc < cur.x ? acc : cur.x),
     Number.MAX_SAFE_INTEGER
@@ -240,7 +245,7 @@ export const annotationCocoTxt = (label_in: string, paths: Coordinate[]) => {
 export const annotationYoloTxt = (
   label_in: string,
   paths: Coordinate[],
-  size: { width: number; height: number }
+  size: ImageSize
 ) => {
   const x_min = paths.reduce(
     (acc, cur) => (acc < cur.x ? acc : cur.x),
@@ -264,35 +269,6 @@ export const annotationYoloTxt = (
     y_center: (y_min + y_max) / 2 / size.height,
     width: (x_max - x_min) / size.width,
     height: (y_max - y_min) / size.height,
-  };
-};
-
-export const annotationPascalVocTxt = (
-  label_in: string,
-  paths: Coordinate[]
-) => {
-  const x_min = paths.reduce(
-    (acc, cur) => (acc < cur.x ? acc : cur.x),
-    Number.MAX_SAFE_INTEGER
-  );
-  const y_min = paths.reduce(
-    (acc, cur) => (acc < cur.y ? acc : cur.y),
-    Number.MAX_SAFE_INTEGER
-  );
-  const x_max = paths.reduce(
-    (acc, cur) => (acc > cur.x ? acc : cur.x),
-    -Number.MAX_SAFE_INTEGER
-  );
-  const y_max = paths.reduce(
-    (acc, cur) => (acc > cur.y ? acc : cur.y),
-    -Number.MAX_SAFE_INTEGER
-  );
-  return {
-    label: label_in,
-    x_min,
-    y_min,
-    x_max,
-    y_max,
   };
 };
 
@@ -323,7 +299,7 @@ export const generateXML = (file: File, size: ImageSize, shapes: Shape[]) => {
   return xmlStr;
 };
 
-export const parseXml = async (xmlStr: string): Promise<Shape[]> => {
+export const parseXml = (xmlStr: string): Shape[] => {
   const parser = new XMLParser();
   const xmlDoc = parser.parse(xmlStr);
 
@@ -357,31 +333,115 @@ export const parseXml = async (xmlStr: string): Promise<Shape[]> => {
 };
 
 // coco RECTANGLE format
-export const generateCoco = (file: File, size: ImageSize, shapes: Shape[]) => {
-  const annotation = annotationFactory(file);
-  annotation.object = shapes.map(shape => annotationObjectFactory(shape));
-  const text = shapes.map(shape => annotationCocoTxt(shape.label, shape.paths));
-
-  let txtContent = '';
-  text.forEach(item => {
-    const { label, x_min, y_min, width, height } = item;
-    txtContent += `${label} ${x_min} ${y_min} ${width} ${height}\n`;
-  });
-
-  return txtContent;
+// Helper function to get category ID from label name
+const getCategoryId = (label: string, categories: CocoCategory[]): number => {
+  const category = categories.find(cat => cat.name === label);
+  if (category) return category.id;
+  return -1;
 };
 
-export const parseCoco = async (text: string): Promise<Shape[]> => {
-  const lines = text.trim().split('\n');
-  const shapes: Shape[] = [];
+// Convert shape to COCO annotation format
+const annotationToCoco = (
+  shape: Shape,
+  annotationId: number,
+  imageId: number,
+  categories: CocoCategory[]
+): CocoAnnotation => {
+  // Calculate bounding box from paths
+  const { x_min, y_min, width, height } = annotationCocoJson(
+    shape.label,
+    shape.paths
+  );
 
-  // Process each line
-  for (const line of lines) {
-    const parts = line.trim().split(/\s+/);
-    if (parts.length === 5) {
-      const label = parts[0];
-      const [_, x_min, y_min, width, height] = parts.map(parseInt);
+  // Calculate area
+  const area = width * height;
 
+  // Get category ID
+  const categoryId = getCategoryId(shape.label, categories);
+
+  // Prepare segmentation - convert paths to a flat array
+  const segmentation = [shape.paths.flatMap(p => [p.x, p.y])];
+
+  return {
+    id: annotationId,
+    image_id: imageId,
+    category_id: categoryId,
+    bbox: [x_min, y_min, width, height],
+    area: area,
+    segmentation: segmentation,
+    iscrowd: 0,
+  };
+};
+
+// Convert to COCO JSON format
+const convertToCoco = (
+  file: File,
+  size: ImageSize,
+  shapes: Shape[]
+): CocoDataset => {
+  // Create unique categories from shape labels
+  const uniqueLabels = [...new Set(shapes.map(shape => shape.label))];
+  const categories: CocoCategory[] = uniqueLabels.map((label, index) => ({
+    id: index + 1,
+    name: label,
+    supercategory: 'character',
+  }));
+
+  // Create image info
+  const image: CocoImage = {
+    id: 1, // Assuming single image
+    width: size.width,
+    height: size.height,
+    file_name: file.name,
+  };
+
+  // Create annotations
+  const annotations: CocoAnnotation[] = shapes.map((shape, index) =>
+    annotationToCoco(shape, index + 1, image.id, categories)
+  );
+
+  // Construct the final COCO dataset
+  return {
+    info: {
+      year: new Date().getFullYear(),
+      version: '1.0',
+      description: 'COCO Format Dataset',
+      contributor: '',
+      url: '',
+      date_created: new Date(),
+    },
+    licenses: [],
+    images: [image],
+    annotations: annotations,
+    categories: categories,
+  };
+};
+
+// Export COCO JSON as a string
+export const generateCoco = (
+  file: File,
+  size: ImageSize,
+  shapes: Shape[]
+): string => {
+  const cocoData = convertToCoco(file, size, shapes);
+  return JSON.stringify(cocoData, null, 2);
+};
+
+export const parseCoco = (jsonString: string): Shape[] => {
+  try {
+    const cocoData: CocoDataset = JSON.parse(jsonString);
+    const shapes: Shape[] = [];
+
+    for (const annotation of cocoData.annotations) {
+      // Find category name from category ID
+      const category = cocoData.categories.find(
+        cat => cat.id === annotation.category_id
+      );
+      if (!category) continue;
+
+      const [x_min, y_min, width, height] = annotation.bbox;
+
+      // Create shape with rectangle corners
       shapes.push(
         shapeFactoryTest(
           [
@@ -391,38 +451,34 @@ export const parseCoco = async (text: string): Promise<Shape[]> => {
             { x: x_min, y: y_min + height },
             { x: x_min, y: y_min },
           ],
-          label
+          category.name
         )
       );
     }
-  }
 
-  return shapes;
+    return shapes;
+  } catch (error) {
+    console.error('Error parsing COCO JSON:', error);
+    return [];
+  }
 };
 
 // yolo RECTANGLE format
 export const generateYolo = (file: File, size: ImageSize, shapes: Shape[]) => {
-  const annotation = annotationFactory(file);
-  annotation.size = imageSizeFactory(size);
-  annotation.object = shapes.map(shape => annotationObjectFactory(shape));
-
   const text = shapes.map(shape =>
-    annotationYoloTxt(shape.label, shape.paths, annotation.size)
+    annotationYoloTxt(shape.label, shape.paths, imageSizeFactory(size))
   );
 
   let txtContent = '';
   text.forEach(item => {
     const { label, x_center, y_center, width, height } = item;
-    txtContent += `${label} ${x_center} ${y_center} ${width} ${height}\n`;
+    txtContent += `${label} ${x_center.toFixed(8)} ${y_center.toFixed(8)} ${width.toFixed(8)} ${height.toFixed(8)}\n`;
   });
 
   return txtContent;
 };
 
-export const parseYolo = async (
-  text: string,
-  imageSize: ImageSize
-): Promise<Shape[]> => {
+export const parseYolo = (text: string, imageSize: ImageSize): Shape[] => {
   const lines = text.trim().split('\n');
   const shapes: Shape[] = [];
 
@@ -463,47 +519,50 @@ export const generatePascalVoc = (
   shapes: Shape[]
 ) => {
   const annotation = annotationFactory(file);
+  annotation.size = imageSizeFactory(size);
   annotation.object = shapes.map(shape => annotationObjectFactory(shape));
-  const text = shapes.map(shape =>
-    annotationPascalVocTxt(shape.label, shape.paths)
-  );
 
-  let txtContent = '';
-  text.forEach(item => {
-    const { label, x_min, y_min, x_max, y_max } = item;
-    txtContent += `${label} ${x_min} ${y_min} ${x_max} ${y_max}\n`;
-  });
-
-  return txtContent;
+  let xmlStr = '';
+  try {
+    const builder = new XMLBuilder({ format: true });
+    xmlStr = builder.build(annotation);
+  } catch (error) {
+    console.error(error);
+  }
+  return xmlStr;
 };
 
-export const parsePascalVoc = async (text: string): Promise<Shape[]> => {
-  const lines = text.trim().split('\n');
-  const shapes: Shape[] = [];
+export const parsePascalVoc = (xmlStr: string): Shape[] => {
+  const parser = new XMLParser();
+  const xmlDoc = parser.parse(xmlStr);
 
-  // Process each line
-  for (const line of lines) {
-    const parts = line.trim().split(/\s+/);
-    if (parts.length === 5) {
-      const label = parts[0];
-      const [_, x_min, y_min, x_max, y_max] = parts.map(parseInt);
-
-      shapes.push(
-        shapeFactoryTest(
-          [
-            { x: x_min, y: y_min },
-            { x: x_max, y: y_min },
-            { x: x_max, y: y_max },
-            { x: x_min, y: y_max },
-            { x: x_min, y: y_min },
-          ],
-          label
-        )
-      );
-    }
+  if (!xmlDoc.object) {
+    return [];
   }
 
-  return shapes;
+  const objects = Array.isArray(xmlDoc.object)
+    ? xmlDoc.object
+    : [xmlDoc.object];
+
+  return objects.map((obj: any) => {
+    const label = obj.label || '';
+    const bndbox = obj.bndbox || {};
+    const x_min = parseInt(bndbox.xmin) || 0;
+    const y_min = parseInt(bndbox.ymin) || 0;
+    const x_max = parseInt(bndbox.xmax) || 0;
+    const y_max = parseInt(bndbox.ymax) || 0;
+
+    return shapeFactoryTest(
+      [
+        { x: x_min, y: y_min },
+        { x: x_max, y: y_min },
+        { x: x_max, y: y_max },
+        { x: x_min, y: y_max },
+        { x: x_min, y: y_min },
+      ],
+      label
+    );
+  });
 };
 
 export const exportXML = (xmlStr: string, fileName = 'label.xml') => {
@@ -519,89 +578,107 @@ export const exportXML = (xmlStr: string, fileName = 'label.xml') => {
 // figure zip file
 export const exportZip = (
   files: File[],
-  xmls: string[],
-  type: string = 'YOLO'
+  content: string[],
+  type: 'COCO' | 'YOLO' | 'PASCAL_VOC'
 ) => {
+  let folderName = '';
+  switch (type) {
+    case 'COCO':
+      folderName = COCO_FOLDER_NAME;
+      break;
+    case 'YOLO':
+      folderName = YOLO_FOLDER_NAME;
+      break;
+    case 'PASCAL_VOC':
+      folderName = PASCAL_VOC_FOLDER_NAME;
+      break;
+  }
+
+  // Create the root directory
   const zip = new JSZip();
-  let folder: JSZip | null = null;
+  const rootFolder = zip.folder(folderName);
 
+  if (!rootFolder) {
+    console.error('Failed to create root folder');
+    return;
+  }
+
+  // Create format folder structure
   if (type === 'COCO') {
-    folder = zip.folder(COCO_FOLDER_NAME);
-  }
+    // COCO structure: root/images/, root/annotations/
+    const imagesFolder = rootFolder.folder('images');
+    const annotationsFolder = rootFolder.folder('annotations');
 
-  if (type === 'YOLO') {
-    folder = zip.folder(YOLO_FOLDER_NAME);
-  }
+    // Create a single annotations file containing all annotations
+    const cocoDataset: CocoDataset = {
+      info: {
+        year: new Date().getFullYear(),
+        version: '1.0',
+        description: 'COCO Format Dataset',
+        contributor: '',
+        url: '',
+        date_created: new Date(),
+      },
+      licenses: [],
+      images: [],
+      annotations: [],
+      categories: [],
+    };
 
-  if (type === 'PASCAL_VOC') {
-    folder = zip.folder(PASCAL_VOC_FOLDER_NAME);
-  }
+    // Process each image and its annotation
+    files.forEach((file: File, index: number) => {
+      imagesFolder?.file(file.name, file);
+      annotationsFolder?.file(
+        `${file.name.split('.')[0]}.json`,
+        content[index]
+      );
 
-  files.forEach((file: File, index: number) => {
-    folder?.file(file.name, file);
-    folder?.file(`${file.name.split('.')[0]}.txt`, xmls[index]);
-  });
+      try {
+        // Parse the annotation content and add to the combined dataset
+        const annotation: CocoDataset = JSON.parse(content[index]);
+        cocoDataset.images.push(...annotation.images);
+        cocoDataset.annotations.push(...annotation.annotations);
 
-  zip.generateAsync({ type: 'blob' }).then(content => {
-    saveAs(content, `${convertDateToString(new Date())}.zip`);
-  });
-};
+        // Merge unique categories
+        annotation.categories.forEach(category => {
+          if (!cocoDataset.categories.some(c => c.id === category.id)) {
+            cocoDataset.categories.push(category);
+          }
+        });
+      } catch (error) {
+        console.error(`Error parsing COCO annotation for ${file.name}:`, error);
+      }
+    });
 
-export const detectAnnotationFormat = (fileContent: string) => {
-  // Trim and split the file content into lines
-  const lines = fileContent.trim().split('\n');
-
-  // If no lines or empty file
-  if (lines.length === 0) {
-    return 'UNKNOWN';
-  }
-
-  // Take the first line as a sample
-  const firstLine = lines[0].trim().split(/\s+/);
-
-  // Check YOLO format
-  const isYOLO = () => {
-    if (firstLine.length !== 5) return false;
-
-    // YOLO format: label x_center y_center width height (all normalized 0-1)
-    const [_, x, y, w, h] = firstLine.map(parseFloat);
-
-    return (
-      x >= 0 && x <= 1 && y >= 0 && y <= 1 && w > 0 && w <= 1 && h > 0 && h <= 1
+    // Save the combined annotations file
+    annotationsFolder?.file(
+      `labels.json`,
+      JSON.stringify(cocoDataset, null, 2)
     );
-  };
+  } else if (type === 'YOLO') {
+    // YOLO structure: root/images/, root/labels/
+    const imagesFolder = rootFolder.folder('images');
+    const labelsFolder = rootFolder.folder('labels');
 
-  // Check Pascal VOC format
-  const isPascalVOC = () => {
-    // Pascal VOC format: label, xmin, ymin, xmax, ymax
-    if (firstLine.length !== 5) return false;
+    // Process each image and its annotation
+    files.forEach((file: File, index: number) => {
+      imagesFolder?.file(file.name, file);
+      labelsFolder?.file(`${file.name.split('.')[0]}.txt`, content[index]);
+    });
+  } else if (type === 'PASCAL_VOC') {
+    // PASCAL VOC structure: root/JPEGImages/, root/Annotations/
+    const imagesFolder = rootFolder.folder('JPEGImages');
+    const annotationsFolder = rootFolder.folder('Annotations');
 
-    const [_, xmin, ymin, xmax, ymax] = firstLine.map(parseInt);
-
-    return xmin >= 0 && ymin >= 0 && xmin < xmax && ymin < ymax;
-  };
-
-  // Check COCO format
-  const isCOCO = () => {
-    // COCO format typically: label, x, y, width, height
-    if (firstLine.length !== 5) return false;
-
-    const [_, x, y, width, height] = firstLine.map(parseInt);
-
-    return x >= 0 && y >= 0 && width > 0 && height > 0;
-  };
-
-  if (isYOLO()) {
-    return 'YOLO';
+    // Process each image and its annotation
+    files.forEach((file: File, index: number) => {
+      imagesFolder?.file(file.name, file);
+      annotationsFolder?.file(`${file.name.split('.')[0]}.xml`, content[index]);
+    });
   }
 
-  if (isPascalVOC()) {
-    return 'PASCAL_VOC';
-  }
-
-  if (isCOCO()) {
-    return 'COCO';
-  }
-
-  return 'UNKNOWN';
+  // Generate the zip file and download it
+  zip.generateAsync({ type: 'blob' }).then(content => {
+    saveAs(content, `${folderName}.zip`);
+  });
 };

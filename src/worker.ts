@@ -4,20 +4,21 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 async function startWorker() {
-  const connection = await amqp.connect(process.env.RABBITMQ_URL!);
-  const channel = await connection.createChannel();
-  await channel.assertQueue(process.env.QUEUE_NAME!, { durable: true });
+  try {
+    const connection = await amqp.connect(process.env.RABBITMQ_URL!);
+    const channel = await connection.createChannel();
+    await channel.assertQueue(process.env.QUEUE_NAME!, { durable: true });
+    await channel.prefetch(2);
 
-  console.log('[*] Worker is waiting for tasks...');
+    console.log('[*] Worker is waiting for tasks...');
 
-  channel.consume(
-    process.env.QUEUE_NAME!,
-    async msg => {
-      if (msg !== null) {
-        const task = JSON.parse(msg.content.toString());
-        console.log(`[✔] Processing task: ${task.id}`);
+    channel.consume(
+      process.env.QUEUE_NAME!,
+      async msg => {
+        if (msg !== null) {
+          const task = JSON.parse(msg.content.toString());
+          console.log(`[✔] Processing task: ${task.id}`);
 
-        try {
           // Call API Flask to train model
           const response = await axios.post(
             `${process.env.NEXT_PUBLIC_FLASK_API!}/train`,
@@ -39,17 +40,17 @@ async function startWorker() {
           );
 
           const data = await result.json();
-
           console.log(`[✔] Result sent for task ${task.id}`, data);
-        } catch (error) {
-          console.error(`[❌] Error processing task ${task.id}`, error);
-        }
 
-        channel.ack(msg);
-      }
-    },
-    { noAck: false }
-  );
+          channel.ack(msg);
+        }
+      },
+      { noAck: false }
+    );
+  } catch (error) {
+    console.error('[❌] Error during consume task:', error);
+    throw error;
+  }
 }
 
 export default startWorker;

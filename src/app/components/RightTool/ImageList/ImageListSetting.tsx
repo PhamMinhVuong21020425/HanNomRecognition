@@ -116,7 +116,7 @@ function ImageListSetting() {
       const xml = generateXML(file, imageSizes[i], shapes[i]);
       xmls.push(xml);
     }
-    exportZip(files, xmls);
+    exportZip(files, xmls, 'PASCAL_VOC');
   };
 
   const onSaveAllClick = async () => {
@@ -132,7 +132,7 @@ function ImageListSetting() {
     const xmls = files.map((file, index) =>
       generateXML(file, imageSizes[index], shapes[index])
     );
-    exportZip(files, xmls);
+    exportZip(files, xmls, 'PASCAL_VOC');
   };
 
   const items = [
