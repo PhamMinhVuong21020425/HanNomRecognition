@@ -32,8 +32,6 @@ import {
   generateYolo,
   fetchFileFromObjectUrl,
   generatePascalVoc,
-  parseXml,
-  detectAnnotationFormat,
   parseYolo,
   parsePascalVoc,
   parseCoco,
@@ -51,6 +49,7 @@ import {
   selectShapes,
   selectSelShapeIndex,
 } from '@/lib/redux';
+import type { ImageSize } from '@/lib/redux';
 import type { ImageType } from '@/types/ImageType';
 import type { AnnotationFile } from '@/types/AnnotationType';
 import Loading from './Loading';
@@ -123,7 +122,6 @@ function TopBar() {
         return;
       }
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
-      console.log(fileExtension);
       switch (fileExtension) {
         case 'zip':
           // Extract files from the ZIP file
@@ -133,7 +131,7 @@ function TopBar() {
             .filter(
               path =>
                 !zip.files[path].dir &&
-                IMAGE_TYPES.includes(getURLExtension(path).toLowerCase())
+                IMAGE_TYPES.includes(getURLExtension(path)?.toLowerCase())
             )
             .map(async path => {
               const blob = await zip.files[path].async('blob');
@@ -148,7 +146,7 @@ function TopBar() {
             .filter(
               path =>
                 !zip.files[path].dir &&
-                ANNOTATION_TYPES.includes(getURLExtension(path).toLowerCase())
+                ANNOTATION_TYPES.includes(getURLExtension(path)?.toLowerCase())
             )
             .map(async path => {
               const blob = await zip.files[path].async('blob');
@@ -207,29 +205,17 @@ function TopBar() {
       const fileExtension = annotations[i].name.split('.').pop()?.toLowerCase();
       switch (fileExtension) {
         case 'txt':
-          const format = detectAnnotationFormat(annotations[i].text);
-          switch (format) {
-            case 'YOLO':
-              const size = await getImageSizeFromUrl(image.obj_url);
-              newShapes[imgIndex] = await parseYolo(
-                annotations[i].text,
-                imageSizeFactory(size)
-              );
-              break;
-            case 'PASCAL_VOC':
-              newShapes[imgIndex] = await parsePascalVoc(annotations[i].text);
-              break;
-            case 'COCO':
-              newShapes[imgIndex] = await parseCoco(annotations[i].text);
-              break;
-            default:
-              break;
-          }
+          const size = await getImageSizeFromUrl(image.obj_url);
+          newShapes[imgIndex] = parseYolo(
+            annotations[i].text,
+            imageSizeFactory(size)
+          );
           break;
         case 'xml':
-          newShapes[imgIndex] = await parseXml(annotations[i].text);
+          newShapes[imgIndex] = parsePascalVoc(annotations[i].text);
           break;
         case 'json':
+          newShapes[imgIndex] = parseCoco(annotations[i].text);
           break;
         default:
           break;
@@ -281,38 +267,42 @@ function TopBar() {
     message.info(isFullScreen ? 'Exited full screen' : 'Entered full screen');
   };
 
-  const onDownload = async (type: string) => {
+  const onDownload = async (type: 'COCO' | 'YOLO' | 'PASCAL_VOC') => {
     if (imageFiles.length === 0) return;
 
     const files = [];
+    const newImageSizes: ImageSize[] = [];
     for (const img of imageFiles) {
+      const size = await getImageSizeFromUrl(img.obj_url);
+      newImageSizes.push(imageSizeFactory(size));
+
       const file = await fetchFileFromObjectUrl(img.obj_url, img.name);
       files.push(file);
     }
 
-    let xmls: string[] = [];
+    let content: string[] = [];
 
     switch (type) {
       case 'COCO':
-        xmls = files.map((file, index) =>
-          generateCoco(file, imageSizes[index], shapes[index])
+        content = files.map((file, index) =>
+          generateCoco(file, newImageSizes[index], shapes[index])
         );
         break;
       case 'YOLO':
-        xmls = files.map((file, index) =>
-          generateYolo(file, imageSizes[index], shapes[index])
+        content = files.map((file, index) =>
+          generateYolo(file, newImageSizes[index], shapes[index])
         );
         break;
       case 'PASCAL_VOC':
-        xmls = files.map((file, index) =>
-          generatePascalVoc(file, imageSizes[index], shapes[index])
+        content = files.map((file, index) =>
+          generatePascalVoc(file, newImageSizes[index], shapes[index])
         );
         break;
       default:
         break;
     }
 
-    exportZip(files, xmls, type);
+    exportZip(files, content, type);
   };
 
   const saveItems = [

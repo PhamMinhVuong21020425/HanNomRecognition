@@ -43,8 +43,6 @@ import {
 import { DRAW_STATUS_TYPES, SHAPE_TYPES, ANNOTATION_TYPES } from '@/constants';
 import {
   fetchFileFromObjectUrl,
-  detectAnnotationFormat,
-  parseXml,
   parseCoco,
   parseYolo,
   parsePascalVoc,
@@ -221,48 +219,25 @@ function DrawTool() {
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     switch (fileExtension) {
       case 'json':
-        const reader = new FileReader();
-        reader.onload = () => {
-          const data = JSON.parse(reader.result as string);
-          dispatch(setDetections([...listDetections, ...data]));
-        };
-        reader.readAsText(file);
+        const cocoShapesCopy = cloneDeep(shapes);
+        cocoShapesCopy[selDrawImageIndex] = parseCoco(fileContent);
+        dispatch(setShapes({ shapes: cocoShapesCopy }));
         break;
       case 'xml':
         const xmlShapesCopy = cloneDeep(shapes);
-        xmlShapesCopy[selDrawImageIndex] = await parseXml(fileContent);
+        xmlShapesCopy[selDrawImageIndex] = parsePascalVoc(fileContent);
         dispatch(setShapes({ shapes: xmlShapesCopy }));
         break;
       case 'txt':
-        const format = detectAnnotationFormat(fileContent);
-        switch (format) {
-          case 'YOLO':
-            const yoloShapesCopy = cloneDeep(shapes);
-            yoloShapesCopy[selDrawImageIndex] = await parseYolo(
-              fileContent,
-              imageSizes[selDrawImageIndex]
-            );
-            dispatch(setShapes({ shapes: yoloShapesCopy }));
-            break;
-          case 'PASCAL_VOC':
-            const pascalVocShapesCopy = cloneDeep(shapes);
-            pascalVocShapesCopy[selDrawImageIndex] =
-              await parsePascalVoc(fileContent);
-            dispatch(setShapes({ shapes: pascalVocShapesCopy }));
-            break;
-          case 'COCO':
-            const cocoShapesCopy = cloneDeep(shapes);
-            cocoShapesCopy[selDrawImageIndex] = await parseCoco(fileContent);
-            dispatch(setShapes({ shapes: cocoShapesCopy }));
-            break;
-          default:
-            message.error('Invalid annotation format');
-            success = false;
-            break;
-        }
+        const yoloShapesCopy = cloneDeep(shapes);
+        yoloShapesCopy[selDrawImageIndex] = parseYolo(
+          fileContent,
+          imageSizes[selDrawImageIndex]
+        );
+        dispatch(setShapes({ shapes: yoloShapesCopy }));
         break;
       default:
-        message.error('File type not supported');
+        message.error('Invalid annotation format. File type not supported.');
         success = false;
         break;
     }
