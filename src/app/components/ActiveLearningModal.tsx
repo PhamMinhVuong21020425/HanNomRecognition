@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { Button, Modal, Form, Select, InputNumber } from 'antd';
-import { NotificationType } from '@/types/NotificationType';
+import { Notification } from '@/entities/notification.entity';
+import { NotificationStatus } from '@/enums/NotificationStatus';
 
 type ActiveLearningModalProps = {
   visible: boolean;
   setVisible: (visible: boolean) => void;
-  openNotification: (
-    notificationData: Omit<NotificationType, 'key' | 'time'>
-  ) => void;
+  openNotification: (notificationData: Partial<Notification>) => Promise<void>;
 };
 
 function ActiveLearningModal({
@@ -20,12 +19,12 @@ function ActiveLearningModal({
   const [modelInference, setModelInference] = useState('');
   const [strategy, setStrategy] = useState('');
 
-  const handleActiveLearningSubmit = (values: any) => {
+  const handleActiveLearningSubmit = async () => {
     setVisible(false);
-    openNotification({
-      title: 'Active Learning',
-      description: `Active learning started with ${values.modelInference} model.`,
-      status: 'success',
+    await openNotification({
+      message: 'Active Learning',
+      description: `Active learning started with ${modelInference} model.`,
+      status: NotificationStatus.INFO,
     });
     form.resetFields();
   };
