@@ -9,14 +9,14 @@ export function useTrainingUpdates() {
     const socket = connectSocket();
 
     // Listen for incoming messages (received from Express server)
-    socket.on('trainingResult', data => {
-      console.log('[📡] Received training update:', data);
-      setUpdates(prev => [...prev, data]);
+    socket.on('receive_message', message => {
+      console.log('[📡] Received training update:', message);
+      setUpdates(prev => [...prev, message]);
     });
 
     // Cleanup on component unmount
     return () => {
-      socket.off('trainingResult');
+      socket.off('receive_message');
     };
   }, []);
 

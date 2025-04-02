@@ -1,18 +1,26 @@
 import { NextFunction, Response, Request } from 'express';
 import asyncHandler from 'express-async-handler';
 import sendToQueue from '../config/rabbit-mq';
-import { getIO } from '../config/socket-io';
+import { sendSystemMessage } from '../config/socket-io';
 
 export const trainModelDetect = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.file) {
+      res.status(400).json({ success: false, message: 'No image uploaded' });
+      return;
+    }
+
     const task = {
       id: Date.now(),
-      model: req.body.model,
-      parameters: req.body.parameters,
+      ...req.body,
+      dataset: req.file.path,
+      type: 'detect',
+      status: 'pending',
+      created_at: new Date(),
     };
 
     await sendToQueue(task);
-    res.json({ message: 'Task added to queue', taskId: task.id });
+    res.json({ success: true, message: 'Job added to queue' });
   }
 );
 
@@ -21,8 +29,8 @@ export const trainModelDetectResult = asyncHandler(
     console.log(`[✔] Training result received:`, req.body);
 
     // Send event to all connected clients
-    const io = getIO();
-    io.emit('trainingResult', req.body);
+    await sendSystemMessage(req.body.userId, req.body);
+
     res.json({ message: 'Result received' });
   }
 );
