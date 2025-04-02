@@ -1,4 +1,5 @@
 import '../scss/ToolHeader.scss';
+import axios from '@/lib/axios';
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { shallowEqual } from 'react-redux';
@@ -43,8 +44,10 @@ import {
   selectShapes,
   selectSelShapeIndex,
 } from '@/lib/redux';
-import { imageSizeFactory } from '@/utils/general';
-import { NotificationType } from '@/types/NotificationType';
+import { connectSocket } from '@/lib/socket';
+import { imageSizeFactory, formatDateToString } from '@/utils/general';
+import { Notification } from '@/entities/notification.entity';
+import { NotificationStatus } from '@/enums/NotificationStatus';
 import TrainingModal from './TrainingModal';
 import ActiveLearningModal from './ActiveLearningModal';
 
@@ -52,7 +55,7 @@ function ToolHeader() {
   const router = useRouter();
   const [isTrainModalVisible, setIsTrainModalVisible] = useState(false);
   const [isALModalVisible, setIsALModalVisible] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationType[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeTab, setActiveTab] = useState('detection');
 
   const userData = useAppSelector(selectUser);
@@ -87,9 +90,45 @@ function ToolHeader() {
 
   useEffect(() => {
     if (!isFirstRender.current) return;
-    if (!files || files.length === 0) return;
-
     isFirstRender.current = false;
+
+    // Connect to socket
+    const socket = connectSocket();
+    socket.emit('login', userData?.id);
+
+    // Get notifications from the server
+    axios
+      .get(`/be/notis/${userData?.id}`)
+      .then(response => {
+        const notifications = response.data;
+        setNotifications(notifications);
+      })
+      .catch(error => {
+        console.error('Error fetching notifications:', error);
+      });
+
+    socket.on('receive_message', message => {
+      console.log('[📡] Received training update:', message);
+      let title;
+      let status;
+      if (message.content.result.status === 'error') {
+        title = 'Training Failed';
+        status = NotificationStatus.ERROR;
+      } else {
+        title = 'Training Completed';
+        status = NotificationStatus.SUCCESS;
+      }
+
+      const notificationData: Partial<Notification> = {
+        message: title,
+        description: message.content.result.message,
+        status,
+        created_at: new Date(),
+      };
+      openNotification(notificationData);
+    });
+
+    if (!files || files.length === 0) return;
 
     const msg =
       files.length > 1 ? `${files.length} images` : `${files.length} image`;
@@ -113,6 +152,11 @@ function ToolHeader() {
         selShapeIndex,
       })
     );
+
+    // Cleanup on component unmount
+    return () => {
+      socket.off('receive_message');
+    };
   }, []);
 
   const handleGoHome = () => {
@@ -152,18 +196,17 @@ function ToolHeader() {
     setIsALModalVisible(true);
   };
 
-  const openNotification = (
-    notificationData: Omit<NotificationType, 'key' | 'time'>
-  ) => {
-    const key = `open${Date.now()}`;
-    const newNotification: NotificationType = {
-      key,
+  const openNotification = async (notificationData: Partial<Notification>) => {
+    if (!userData) return;
+
+    const response = await axios.post('/be/notis/create', {
       ...notificationData,
-      time: new Date(),
-    };
+      user: { id: userData.id },
+    });
+    const newNotification = response.data;
 
     notification.open({
-      message: newNotification.title,
+      message: newNotification.message,
       description: newNotification.description,
       type: newNotification.status,
       duration: 5,
@@ -173,8 +216,15 @@ function ToolHeader() {
     setNotifications(prev => [newNotification, ...prev]);
   };
 
-  const clearNotifications = () => {
-    setNotifications([]);
+  const clearNotifications = async () => {
+    if (!userData) return;
+    const response = await axios.post('/be/notis/delete', {
+      userId: userData.id,
+    });
+
+    if (response.data === true) {
+      setNotifications([]);
+    }
   };
 
   const userMenuItems = [
@@ -300,18 +350,18 @@ function ToolHeader() {
               ) : (
                 notifications.map(notification => (
                   <div
-                    key={notification.key}
+                    key={notification.id}
                     className={`notification-item notification-${notification.status}`}
                   >
                     <div className="notification-content">
                       <div className="notification-title">
-                        {notification.title}
+                        {notification.message}
                       </div>
                       <div className="notification-description">
                         {notification.description}
                       </div>
                       <div className="notification-time">
-                        {notification.time.toLocaleString()}
+                        {formatDateToString(notification.created_at)}
                       </div>
                     </div>
                   </div>

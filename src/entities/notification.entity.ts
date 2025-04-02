@@ -19,10 +19,10 @@ export class Notification {
   user: User;
 
   @Column()
-  title: string;
+  message: string;
 
   @Column()
-  message: string;
+  description: string;
 
   @CreateDateColumn()
   created_at: Date;

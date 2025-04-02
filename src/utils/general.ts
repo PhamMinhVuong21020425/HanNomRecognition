@@ -59,6 +59,14 @@ export const getImageSizeFromUrl = (imageUrl: string): Promise<ImageSize> =>
     img.onerror = err => reject(err);
   });
 
+export const normalizeFileName = (fileName: string) => {
+  return fileName
+    .toLowerCase()
+    .replace(/\s+/g, '_') // Replace spaces with underscores
+    .replace(/[^a-z0-9-_\.]/g, '') // Remove non-alphanumeric characters
+    .replace(/\.+$/, ''); // Remove trailing dots
+};
+
 // fetch file from object url
 export const fetchFileFromObjectUrl = async (
   url: string,
@@ -132,6 +140,23 @@ export const convertDateToString = (dateObj: Date) => {
   const second = dateObj.getSeconds().toString();
   const fSecond = second.length === 1 ? `0${second}` : second;
   return `${year}${fMonth}${fDate}${fHour}${fMinute}${fSecond}`;
+};
+
+export const formatDateToString = (date: Date) => {
+  if (!(date instanceof Date)) {
+    date = new Date(date);
+  }
+
+  const pad = (num: number) => String(num).padStart(2, '0');
+
+  const day = pad(date.getDate());
+  const month = pad(date.getMonth() + 1); // 0-11
+  const year = date.getFullYear();
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 };
 
 export function getShapeXYMaxMin(paths: Coordinate[]) {
@@ -463,6 +488,24 @@ export const parseCoco = (jsonString: string): Shape[] => {
   }
 };
 
+export const generateYoloTrain = (
+  file: File,
+  size: ImageSize,
+  shapes: Shape[]
+) => {
+  const text = shapes.map(shape =>
+    annotationYoloTxt(shape.label, shape.paths, imageSizeFactory(size))
+  );
+
+  let txtContent = '';
+  text.forEach(item => {
+    const { label, x_center, y_center, width, height } = item;
+    txtContent += `0 ${x_center.toFixed(8)} ${y_center.toFixed(8)} ${width.toFixed(8)} ${height.toFixed(8)}\n`;
+  });
+
+  return txtContent;
+};
+
 // yolo RECTANGLE format
 export const generateYolo = (file: File, size: ImageSize, shapes: Shape[]) => {
   const text = shapes.map(shape =>
@@ -545,7 +588,7 @@ export const parsePascalVoc = (xmlStr: string): Shape[] => {
     : [xmlDoc.object];
 
   return objects.map((obj: any) => {
-    const label = obj.label || '';
+    const label = obj.label || 0;
     const bndbox = obj.bndbox || {};
     const x_min = parseInt(bndbox.xmin) || 0;
     const y_min = parseInt(bndbox.ymin) || 0;
