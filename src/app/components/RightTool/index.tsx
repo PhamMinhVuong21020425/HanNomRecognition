@@ -8,14 +8,17 @@ import ImageList from './ImageList';
 import ImageListSetting from './ImageList/ImageListSetting';
 import LabelList from './LabelList';
 import LabelListSetting from './LabelList/LabelListSetting';
+import LabelItemClassify from '../LabelItemClassify';
+import { ProblemType } from '@/enums/ProblemType';
 import { selectImagesInfo, selectShapes, useAppSelector } from '@/lib/redux';
 
-function RightToolbar() {
+function RightToolbar({ type }: { type: ProblemType }) {
   const { imageFiles, selDrawImageIndex } = useAppSelector(
     selectImagesInfo,
     shallowEqual
   );
   const shapes = useAppSelector(selectShapes);
+  const labelClassify = imageFiles[selDrawImageIndex]?.label;
 
   const items = [
     {
@@ -26,7 +29,7 @@ function RightToolbar() {
           {`Images (${imageFiles.length})`}
         </span>
       ),
-      children: <ImageList />,
+      children: <ImageList type={type} />,
       collapsible: 'header' as const,
       extra: <ImageListSetting />,
     },
@@ -35,12 +38,15 @@ function RightToolbar() {
       label: (
         <span style={{ fontWeight: 'bolder' }}>
           <FontAwesomeIcon icon={faTag} style={{ marginRight: '8px' }} />
-          {`Labels (${selDrawImageIndex !== -1 ? shapes[selDrawImageIndex].length : 0})`}
+          {type === ProblemType.DETECT
+            ? `Labels (${selDrawImageIndex !== -1 ? shapes[selDrawImageIndex].length : 0})`
+            : `Labels (${labelClassify ? 1 : 0})`}
         </span>
       ),
-      children: <LabelList />,
+      children:
+        type === ProblemType.DETECT ? <LabelList /> : <LabelItemClassify />,
       collapsible: 'header' as const,
-      extra: <LabelListSetting />,
+      extra: type === ProblemType.DETECT ? <LabelListSetting /> : null,
     },
   ];
 

@@ -2,6 +2,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 86%;
   &:hover {
     color: #ff4d4f;
     cursor: pointer;

@@ -1,8 +1,10 @@
 import '@/app/scss/ImageItem.scss';
 import { shallowEqual } from 'react-redux';
+import { CheckCircle } from 'lucide-react';
 import { Row, Col, Checkbox, Space, Button, CheckboxChangeEvent } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { DRAW_STATUS_TYPES } from '@/constants';
+import { ProblemType } from '@/enums/ProblemType';
 import {
   selectDrawStatus,
   selectImagesInfo,
@@ -21,10 +23,11 @@ import {
 type ImageItemProps = {
   index: number;
   name: string;
+  type: ProblemType;
 };
 
 function ImageItem(props: ImageItemProps) {
-  const { index: fileIndex, name } = props;
+  const { index: fileIndex, name, type } = props;
   const dispatch = useAppDispatch();
   const { imageFiles, selDrawImageIndex, imageSizes } = useAppSelector(
     selectImagesInfo,
@@ -34,6 +37,7 @@ function ImageItem(props: ImageItemProps) {
   const drawStatus = useAppSelector(selectDrawStatus);
   const shapes = useAppSelector(selectShapes);
   const selShapeIndex = useAppSelector(selectSelShapeIndex);
+  const labelClassify = imageFiles[fileIndex]?.label;
 
   const onCheckChange = (event: CheckboxChangeEvent) => {
     const set = new Set([...selImageIndexes]);
@@ -82,40 +86,47 @@ function ImageItem(props: ImageItemProps) {
 
   return (
     <Row justify="space-between" style={{ padding: '8px 16px' }}>
-      <Col xs={3}>
+      <Col xs={2}>
         <Checkbox
           checked={selImageIndexes.indexOf(fileIndex) !== -1}
           onChange={onCheckChange}
         />
       </Col>
-      <Col xs={15}>
-        <div
-          title={name}
-          onClick={onItemClick}
-          className="file-item-name"
-          style={{
-            color: fileIndex === selDrawImageIndex ? '#ff4d4f' : '#000000d9',
-          }}
-        >
-          <span className="hover:text-blue-600">
-            ({fileIndex + 1}) {name}
-          </span>
+      <Col xs={17}>
+        <div className=" flex items-center gap-1">
+          <div
+            title={name}
+            onClick={onItemClick}
+            className="file-item-name"
+            style={{
+              color: fileIndex === selDrawImageIndex ? '#ff4d4f' : '#000000d9',
+            }}
+          >
+            <span className="hover:text-blue-600 flex items-center gap-1">
+              ({fileIndex + 1}) {name}
+            </span>
+          </div>
+          {labelClassify ? (
+            <CheckCircle className="text-green-500 w-4 h-4" />
+          ) : null}
         </div>
       </Col>
-      <Col xs={6} style={{ textAlign: 'end' }}>
+      <Col xs={5} style={{ textAlign: 'end' }}>
         <Space>
-          <Button
-            size="small"
-            shape="circle"
-            title={
-              shapes[fileIndex]
-                ? `Total labels: ${shapes[fileIndex].length}`
-                : ''
-            }
-            onClick={onXMLPreviewClick}
-          >
-            {shapes[fileIndex] ? shapes[fileIndex].length : ''}
-          </Button>
+          {type === ProblemType.DETECT ? (
+            <Button
+              size="small"
+              shape="circle"
+              title={
+                shapes[fileIndex]
+                  ? `Total labels: ${shapes[fileIndex].length}`
+                  : ''
+              }
+              onClick={onXMLPreviewClick}
+            >
+              {shapes[fileIndex] ? shapes[fileIndex].length : ''}
+            </Button>
+          ) : null}
           <Button
             type="primary"
             danger

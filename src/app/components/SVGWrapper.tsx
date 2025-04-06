@@ -145,50 +145,6 @@ function SVGWrapper() {
     };
   }, []);
 
-  // Get center point of current view
-  const getViewCenter = () => {
-    if (!svgRef.current || !svgContainerRef.current) return { x: 0, y: 0 };
-
-    const containerRect = svgContainerRef.current.getBoundingClientRect();
-
-    return {
-      x: (containerRect.width / 2 - position.x) / scale,
-      y: (containerRect.height / 2 - position.y) / scale,
-    };
-  };
-
-  // Zoom around the center point
-  const zoomAround = (newScale: number) => {
-    if (isTransitioning) return;
-
-    const center = getViewCenter();
-    const oldScale = scale;
-
-    // Calculate new position to keep the center point fixed
-    const newPosition = {
-      x: position.x - center.x * (newScale - oldScale),
-      y: position.y - center.y * (newScale - oldScale),
-    };
-
-    setIsTransitioning(true);
-    setScale(newScale);
-    setPosition(newPosition);
-
-    setTimeout(() => {
-      setIsTransitioning(false);
-    }, ZOOM_ANIMATION_DURATION);
-  };
-
-  const handleZoomIn = () => {
-    const newScale = Math.min(scale + ZOOM_STEP, MAX_ZOOM);
-    zoomAround(newScale);
-  };
-
-  const handleZoomOut = () => {
-    const newScale = Math.max(scale - ZOOM_STEP, MIN_ZOOM);
-    zoomAround(newScale);
-  };
-
   const handleRotate = (degrees = 90) => {
     if (isTransitioning) return;
 
@@ -202,13 +158,134 @@ function SVGWrapper() {
 
   const handleReset = () => {
     setIsTransitioning(true);
-    setScale(1);
-    setPosition({ x: 0, y: 0 });
+
+    const newScale = 1;
+    setScale(newScale);
+
+    // Calculate the new position to center the image
+    if (svgContainerRef.current && imageSizes[selDrawImageIndex]) {
+      const containerRect = svgContainerRef.current.getBoundingClientRect();
+      const { width: imageWidth, height: imageHeight } =
+        imageSizes[selDrawImageIndex];
+
+      // Calculate the new position to center the image
+      const centerX = (containerRect.width - imageWidth * newScale) / 2;
+      const centerY = (containerRect.height - imageHeight * newScale) / 2;
+
+      setPosition({ x: centerX, y: centerY });
+    } else {
+      setPosition({ x: 0, y: 0 });
+    }
+
     setRotation(0);
 
     setTimeout(() => {
       setIsTransitioning(false);
     }, ZOOM_ANIMATION_DURATION);
+  };
+
+  // Get center point of container
+  const getViewCenter = () => {
+    if (!svgRef.current || !svgContainerRef.current) return { x: 0, y: 0 };
+
+    const containerRect = svgContainerRef.current.getBoundingClientRect();
+
+    return {
+      x: containerRect.width / 2,
+      y: containerRect.height / 2,
+    };
+  };
+
+  const handleZoomIn = () => {
+    const newScale = Math.min(scale + ZOOM_STEP, MAX_ZOOM);
+    zoomAround(newScale);
+  };
+
+  const handleZoomOut = () => {
+    const newScale = Math.max(scale - ZOOM_STEP, MIN_ZOOM);
+    zoomAround(newScale);
+  };
+
+  // Zoom around the center point
+  const zoomAround = (newScale: number, mouseX?: number, mouseY?: number) => {
+    if (isTransitioning) return;
+
+    const oldScale = scale;
+    let newPosition = { ...position };
+
+    if (svgContainerRef.current && imageSizes[selDrawImageIndex]) {
+      const containerRect = svgContainerRef.current.getBoundingClientRect();
+      const { width: imageWidth, height: imageHeight } =
+        imageSizes[selDrawImageIndex];
+
+      // Determine the focus point for zooming (mouse position or center)
+      const focusX =
+        mouseX !== undefined ? mouseX - containerRect.left : getViewCenter().x;
+      const focusY =
+        mouseY !== undefined ? mouseY - containerRect.top : getViewCenter().y;
+
+      // Calculate the position of the point before scaling
+      const pointBeforeX = (focusX - position.x) / oldScale;
+      const pointBeforeY = (focusY - position.y) / oldScale;
+
+      // Calculate the new position of the point after scaling
+      const pointAfterX = pointBeforeX * newScale;
+      const pointAfterY = pointBeforeY * newScale;
+
+      // Calculate new position to keep focus point fixed
+      newPosition = {
+        x: focusX - pointAfterX,
+        y: focusY - pointAfterY,
+      };
+
+      // Center the image if it's smaller than the container
+      const scaledWidth = imageWidth * newScale;
+      const scaledHeight = imageHeight * newScale;
+
+      if (scaledWidth < containerRect.width) {
+        newPosition.x = (containerRect.width - scaledWidth) / 2;
+      }
+
+      if (scaledHeight < containerRect.height) {
+        newPosition.y = (containerRect.height - scaledHeight) / 2;
+      }
+    }
+
+    setScale(newScale);
+    setPosition(newPosition);
+  };
+
+  // Center the image in the container
+  const centerImage = () => {
+    if (!svgContainerRef.current || !imageSizes[selDrawImageIndex]) return;
+
+    const containerRect = svgContainerRef.current.getBoundingClientRect();
+    const { width: imageWidth, height: imageHeight } =
+      imageSizes[selDrawImageIndex];
+
+    const scaledWidth = imageWidth * scale;
+    const scaledHeight = imageHeight * scale;
+
+    // Only center if the image is smaller than the container
+    if (
+      scaledWidth < containerRect.width ||
+      scaledHeight < containerRect.height
+    ) {
+      const centerX =
+        scaledWidth < containerRect.width
+          ? (containerRect.width - scaledWidth) / 2
+          : position.x;
+
+      const centerY =
+        scaledHeight < containerRect.height
+          ? (containerRect.height - scaledHeight) / 2
+          : position.y;
+
+      setPosition({
+        x: centerX,
+        y: centerY,
+      });
+    }
   };
 
   // Detect if it's a touchpad gesture by analyzing wheel events
@@ -277,7 +354,10 @@ function SVGWrapper() {
       const newScale = Math.max(MIN_ZOOM, Math.min(scale + delta, MAX_ZOOM));
 
       if (newScale !== scale) {
-        zoomAround(newScale);
+        zoomAround(newScale, event.clientX, event.clientY);
+        if (newScale < 1) {
+          setTimeout(centerImage, 10);
+        }
       }
     }
     // Handle two-finger scroll/pan on touchpad
@@ -299,6 +379,10 @@ function SVGWrapper() {
       });
     }
   };
+
+  useEffect(() => {
+    centerImage();
+  }, [imageSizes]);
 
   useEffect(() => {
     if (selDrawImageIndex === -1 || imageFiles.length === 0) return;
@@ -326,7 +410,7 @@ function SVGWrapper() {
     } catch (error) {
       console.error(error);
     }
-  }, [selDrawImageIndex, listDetections]);
+  }, [selDrawImageIndex, listDetections, imageFiles]);
 
   useEffect(() => {
     if (imageFiles.length === 0 || !svgRef.current) return;
@@ -770,18 +854,23 @@ function SVGWrapper() {
             viewBox={`0 0 ${imageSizes[selDrawImageIndex].width} ${imageSizes[selDrawImageIndex].height}`}
             style={{
               cursor: 'default',
-              transform: `scale(${scale}) translate(${position.x}px, ${position.y}px) rotate(${rotation}deg)`,
-              transformOrigin: '50% 50%', // Center rotation around the middle of the SVG
+              position: 'absolute',
+              left: position.x,
+              top: position.y - 60,
+              width: `${imageSizes[selDrawImageIndex].width * scale}px`,
+              height: `${imageSizes[selDrawImageIndex].height * scale}px`,
+              transform: `rotate(${rotation}deg)`,
+              transformOrigin: '50% 50%',
               transition: isTransitioning
-                ? `transform ${ZOOM_ANIMATION_DURATION}ms ease-out`
+                ? `transform ${ZOOM_ANIMATION_DURATION}ms ease-out, width ${ZOOM_ANIMATION_DURATION}ms ease-out, height ${ZOOM_ANIMATION_DURATION}ms ease-out`
                 : 'none',
-              willChange: 'transform', // Hint for browser optimization
+              willChange: 'transform, width, height',
             }}
           >
             <image
               href={imageProps.href}
-              width={imageProps.width}
-              height={imageProps.height}
+              width="100%"
+              height="100%"
               preserveAspectRatio="xMidYMid slice"
             />
 

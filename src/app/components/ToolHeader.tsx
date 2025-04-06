@@ -48,15 +48,16 @@ import { connectSocket } from '@/lib/socket';
 import { imageSizeFactory, formatDateToString } from '@/utils/general';
 import { Notification } from '@/entities/notification.entity';
 import { NotificationStatus } from '@/enums/NotificationStatus';
+import { ProblemType } from '@/enums/ProblemType';
 import TrainingModal from './TrainingModal';
 import ActiveLearningModal from './ActiveLearningModal';
 
-function ToolHeader() {
+function ToolHeader({ type }: { type: ProblemType }) {
   const router = useRouter();
   const [isTrainModalVisible, setIsTrainModalVisible] = useState(false);
   const [isALModalVisible, setIsALModalVisible] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [activeTab, setActiveTab] = useState('detection');
+  const [activeTab, setActiveTab] = useState<string>(type);
 
   const userData = useAppSelector(selectUser);
   const dispatch = useAppDispatch();
@@ -71,10 +72,10 @@ function ToolHeader() {
   const files = useAppSelector(selectImagesRedux);
   const isFirstRender = useRef(true);
 
-  const modelMenuItems = [
+  const modelDetectMenuItems = [
     {
       key: '1',
-      label: 'Default Model',
+      label: 'Detection Model',
     },
     {
       key: '2',
@@ -86,7 +87,28 @@ function ToolHeader() {
     },
   ];
 
-  const [selectedModel, setSelectedModel] = useState(modelMenuItems[0]);
+  const modelClassifyMenuItems = [
+    {
+      key: '1',
+      label: 'Classification Model',
+    },
+    {
+      key: '2',
+      label: 'Custom Model 1',
+    },
+    {
+      key: '3',
+      label: 'Custom Model 2',
+    },
+  ];
+
+  const [selectedModelDetect, setSelectedModelDetect] = useState(
+    modelDetectMenuItems[0]
+  );
+
+  const [selectedModelClassify, setSelectedModelClassify] = useState(
+    modelClassifyMenuItems[0]
+  );
 
   useEffect(() => {
     if (!isFirstRender.current) return;
@@ -181,10 +203,17 @@ function ToolHeader() {
     });
   };
 
-  const handleMenuClick: MenuProps['onClick'] = e => {
-    const selected = modelMenuItems.find(item => item.key === e.key);
+  const handleMenuDetectClick: MenuProps['onClick'] = e => {
+    const selected = modelDetectMenuItems.find(item => item.key === e.key);
     if (selected) {
-      setSelectedModel(selected);
+      setSelectedModelDetect(selected);
+    }
+  };
+
+  const handleMenuClassifyClick: MenuProps['onClick'] = e => {
+    const selected = modelClassifyMenuItems.find(item => item.key === e.key);
+    if (selected) {
+      setSelectedModelClassify(selected);
     }
   };
 
@@ -210,6 +239,7 @@ function ToolHeader() {
       description: newNotification.description,
       type: newNotification.status,
       duration: 5,
+      placement: 'bottomRight',
     });
 
     // Add to notifications list
@@ -306,9 +336,10 @@ function ToolHeader() {
           </div>
 
           <div
-            className={`nav-item ${activeTab === 'detection' ? 'active' : ''}`}
+            className={`nav-item ${activeTab === 'detect' ? 'active' : ''}`}
             onClick={() => {
-              setActiveTab('detection');
+              setActiveTab(ProblemType.DETECT);
+              router.push('/annotation-tool');
             }}
           >
             <FontAwesomeIcon icon={faObjectGroup} className="nav-icon" />
@@ -316,9 +347,10 @@ function ToolHeader() {
           </div>
 
           <div
-            className={`nav-item ${activeTab === 'classification' ? 'active' : ''}`}
+            className={`nav-item ${activeTab === 'classify' ? 'active' : ''}`}
             onClick={() => {
-              setActiveTab('classification');
+              setActiveTab('classify');
+              router.push('/classify-tool');
             }}
           >
             <FontAwesomeIcon icon={faProjectDiagram} className="nav-icon" />
@@ -393,7 +425,7 @@ function ToolHeader() {
         </Button>
 
         {/* Active Learning Button (only for Classification tab) */}
-        {activeTab === 'classification' && (
+        {type == ProblemType.CLASSIFY ? (
           <Button
             icon={<FontAwesomeIcon icon={faChartLine} />}
             onClick={handleActiveLearning}
@@ -402,26 +434,51 @@ function ToolHeader() {
           >
             Active Learning
           </Button>
-        )}
+        ) : null}
 
-        {/* Model Selector Dropdown */}
+        {/* Model Detect Selector Dropdown */}
+        {type == ProblemType.DETECT ? (
+          <Dropdown
+            menu={{
+              items: modelDetectMenuItems.map(item => ({
+                ...item,
+                style:
+                  item.key === selectedModelDetect.key
+                    ? { backgroundColor: '#dbeafe' }
+                    : {},
+              })),
+              onClick: handleMenuDetectClick,
+            }}
+            placement="bottomRight"
+            trigger={['click']}
+          >
+            <Button className="model-selector" type="default">
+              <Space>
+                {selectedModelDetect.label}
+                <FontAwesomeIcon icon={faCaretDown} />
+              </Space>
+            </Button>
+          </Dropdown>
+        ) : null}
+
+        {/* Model Classify Selector Dropdown */}
         <Dropdown
           menu={{
-            items: modelMenuItems.map(item => ({
+            items: modelClassifyMenuItems.map(item => ({
               ...item,
               style:
-                item.key === selectedModel.key
+                item.key === selectedModelClassify.key
                   ? { backgroundColor: '#dbeafe' }
                   : {},
             })),
-            onClick: handleMenuClick,
+            onClick: handleMenuClassifyClick,
           }}
           placement="bottomRight"
           trigger={['click']}
         >
-          <Button className="model-selector" type="default">
+          <Button className="model-selector mr-6" type="default">
             <Space>
-              {selectedModel.label}
+              {selectedModelClassify.label}
               <FontAwesomeIcon icon={faCaretDown} />
             </Space>
           </Button>

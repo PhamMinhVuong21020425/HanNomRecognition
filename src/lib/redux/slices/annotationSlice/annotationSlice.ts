@@ -80,6 +80,17 @@ export const annotationSlice = createSlice({
       state.selShapeIndex = selShapeIndex;
     },
 
+    setLabelImageFile: (
+      state,
+      action: PayloadAction<{
+        imageIndex: number;
+        label: string | undefined;
+      }>
+    ) => {
+      const { imageIndex, label } = action.payload;
+      state.imageFiles[imageIndex].label = label;
+    },
+
     setSelDrawImageIndex: (
       state,
       action: PayloadAction<{ selDrawImageIndex: number }>
@@ -249,6 +260,7 @@ export const annotationSlice = createSlice({
 
 export const {
   setImageFiles,
+  setLabelImageFile,
   setSelDrawImageIndex,
   setImageSizes,
   setSelImageIndexes,
