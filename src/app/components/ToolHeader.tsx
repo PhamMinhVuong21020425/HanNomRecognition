@@ -335,27 +335,21 @@ function ToolHeader({ type }: { type: ProblemType }) {
             <span className="nav-text">Model</span>
           </div>
 
-          <div
+          <a
+            href="/annotation-tool"
             className={`nav-item ${activeTab === 'detect' ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab(ProblemType.DETECT);
-              router.push('/annotation-tool');
-            }}
           >
             <FontAwesomeIcon icon={faObjectGroup} className="nav-icon" />
             <span className="nav-text">Detection</span>
-          </div>
+          </a>
 
-          <div
+          <a
+            href="/classify-tool"
             className={`nav-item ${activeTab === 'classify' ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab('classify');
-              router.push('/classify-tool');
-            }}
           >
             <FontAwesomeIcon icon={faProjectDiagram} className="nav-icon" />
             <span className="nav-text">Classification</span>
-          </div>
+          </a>
         </div>
       </div>
 
