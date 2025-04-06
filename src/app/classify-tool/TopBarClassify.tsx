@@ -2,7 +2,7 @@ import '../scss/TopBar.scss';
 import JSZip from 'jszip';
 import { ChangeEvent, useState } from 'react';
 import { shallowEqual } from 'react-redux';
-import { message, Dropdown, Button, Tooltip } from 'antd';
+import { message, Tooltip } from 'antd';
 import {
   FileImageOutlined,
   FileTextOutlined,
@@ -17,26 +17,9 @@ import { IoMenuSharp } from 'react-icons/io5';
 import { FaRegQuestionCircle } from 'react-icons/fa';
 import { BiInfoCircle, BiFullscreen, BiExitFullscreen } from 'react-icons/bi';
 
-import {
-  ANNOTATION_TYPES,
-  IMAGE_TYPES,
-  IMPORT_TYPES,
-  MAX_FILE_SIZE,
-} from '@/constants';
+import { IMAGE_TYPES, MAX_FILE_SIZE } from '@/constants';
 
-import {
-  getURLExtension,
-  imageSizeFactory,
-  generateCoco,
-  exportZip,
-  generateYolo,
-  fetchFileFromObjectUrl,
-  generatePascalVoc,
-  parseYolo,
-  parsePascalVoc,
-  parseCoco,
-  getImageSizeFromUrl,
-} from '@/utils/general';
+import { imageSizeFactory, fetchFileFromObjectUrl } from '@/utils/general';
 
 import {
   useAppDispatch,
@@ -50,6 +33,7 @@ import {
   selectSelShapeIndex,
 } from '@/lib/redux';
 import Loading from '../components/Loading';
+import { ImageType } from '@/types/ImageType';
 
 function TopBarClassify() {
   const dispatch = useAppDispatch();
@@ -104,30 +88,230 @@ function TopBarClassify() {
 
     setIsLoading(true);
     const files = Array.from(event.target.files);
-    const msg =
-      files.length > 1 ? `${files.length} files` : `${files.length} file`;
-
     const jsZip = new JSZip();
-    let success = true;
 
-    for (const file of files) {
-      if (file.size > MAX_FILE_SIZE) {
-        message.error('File is too large');
-        setIsLoading(false);
-        return;
+    try {
+      for (const file of files) {
+        if (file.size > MAX_FILE_SIZE) {
+          message.error('File is too large');
+          setIsLoading(false);
+          return;
+        }
+
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+
+        // Process zip files
+        if (fileExtension === 'zip') {
+          // Load the zip file
+          const zipContent = await jsZip.loadAsync(file);
+          const entries = Object.entries(zipContent.files);
+          const totalEntries = entries.length;
+
+          // Use batch processing to avoid memory issues
+          const BATCH_SIZE = 100;
+          let newImageFiles: ImageType[] = [...imageFiles];
+          let processedCount = 0;
+          let validImageCount = 0;
+
+          // Process in batches
+          for (let i = 0; i < entries.length; i += BATCH_SIZE) {
+            const batch = entries.slice(i, i + BATCH_SIZE);
+            const batchImages: ImageType[] = [];
+
+            // Process each entry in the batch
+            await Promise.all(
+              batch.map(async ([path, zipEntry]) => {
+                // Skip directories
+                if (zipEntry.dir) return;
+
+                // Extract the file path components
+                const pathParts = path.split('/');
+
+                // Skip if we don't have a proper directory structure
+                if (pathParts.length < 2) return;
+
+                // Get label from the parent directory name
+                const label = pathParts[pathParts.length - 2];
+                const fileName = pathParts[pathParts.length - 1];
+
+                // Check if it's an image file
+                const imgExtension = fileName.split('.').pop()?.toLowerCase();
+                if (!IMAGE_TYPES.includes(imgExtension || '')) {
+                  return;
+                }
+
+                try {
+                  // Extract the file blob
+                  const blob = await zipEntry.async('blob');
+                  const objectUrl = URL.createObjectURL(blob);
+
+                  batchImages.push({
+                    obj_url: objectUrl,
+                    name: fileName,
+                    label,
+                  });
+                  validImageCount++;
+                } catch (error) {
+                  console.warn(`Failed to extract ${fileName}:`, error);
+                }
+              })
+            );
+
+            // Update state with this batch before processing the next
+            if (batchImages.length > 0) {
+              newImageFiles = [...newImageFiles, ...batchImages];
+              const newImageSizes = newImageFiles.map((item, index) =>
+                imageSizes[index] ? imageSizes[index] : imageSizeFactory({})
+              );
+              const newShapes = newImageFiles.map((item, index) =>
+                shapes[index] ? shapes[index] : []
+              );
+
+              // Dispatch the action to update the state
+              dispatch(
+                setImageFiles({
+                  imageFiles: newImageFiles,
+                  selDrawImageIndex:
+                    imageFiles.length > 0 ? imageFiles.length : 0,
+                  imageSizes: newImageSizes,
+                  drawStatus,
+                  shapes: newShapes,
+                  selShapeIndex,
+                })
+              );
+            }
+
+            processedCount += batch.length;
+            if (processedCount > 100) {
+              setIsLoading(false);
+              message.success(
+                `Completed processing. Added ${validImageCount} images.`
+              );
+              return;
+            }
+            message.info(
+              `Processed ${processedCount} of ${totalEntries} entries (${validImageCount} valid images found)...`
+            );
+          }
+
+          message.success(
+            `Completed processing. Added ${validImageCount} images.`
+          );
+        } else if (IMAGE_TYPES.includes(fileExtension || '')) {
+          // Process individual image files
+          const objectUrl = URL.createObjectURL(file);
+          const singleImage: ImageType = {
+            obj_url: objectUrl,
+            name: file.name,
+          };
+
+          const newImageFiles = [...imageFiles, singleImage];
+          const newImageSizes = newImageFiles.map((item, index) =>
+            imageSizes[index] ? imageSizes[index] : imageSizeFactory({})
+          );
+          const newShapes = newImageFiles.map((item, index) =>
+            shapes[index] ? shapes[index] : []
+          );
+
+          // Dispatch the action to update the state
+          dispatch(
+            setImageFiles({
+              imageFiles: newImageFiles,
+              selDrawImageIndex: imageFiles.length > 0 ? imageFiles.length : 0,
+              imageSizes: newImageSizes,
+              drawStatus,
+              shapes: newShapes,
+              selShapeIndex,
+            })
+          );
+
+          message.success('Successfully added 1 image.');
+        }
       }
-      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    } catch (error) {
+      console.error('Error processing files:', error);
+      message.error('Failed to process the files');
     }
 
-    if (success) message.success(`Success to load ${msg}.`);
     setIsLoading(false);
   };
 
-  const onSaveClick = () => {
+  const onSaveClick = async () => {
     if (imageFiles.length === 0) {
       message.info('No images are loaded.');
       return;
     }
+
+    // Create a new JSZip instance
+    const zip = new JSZip();
+    const mainFolder = zip.folder('classify_dataset');
+
+    // Pre-fetch all files in parallel instead of sequentially
+    const fetchPromises = imageFiles.map(img =>
+      fetchFileFromObjectUrl(img.obj_url, img.name).then(file => ({
+        file,
+        label: img.label || 'unlabeled',
+      }))
+    );
+
+    const fetchedFiles = await Promise.all(fetchPromises);
+
+    // Group images by label more efficiently
+    const imagesByLabel = fetchedFiles.reduce(
+      (acc, { file, label }) => {
+        if (!acc[label]) {
+          acc[label] = [];
+        }
+        acc[label].push(file);
+        return acc;
+      },
+      {} as Record<string, File[]>
+    );
+
+    // Create promises for all file reading operations
+    const filePromises: Promise<void>[] = [];
+
+    // Process each label group
+    Object.entries(imagesByLabel).forEach(([label, files]) => {
+      const labelFolder = mainFolder?.folder(label);
+
+      // Add each file to its label folder
+      files.forEach(file => {
+        const filePromise = new Promise<void>(resolve => {
+          const reader = new FileReader();
+          reader.onload = e => {
+            if (e.target?.result && labelFolder) {
+              // Add file to the zip
+              labelFolder.file(file.name, e.target.result as ArrayBuffer);
+            }
+            resolve();
+          };
+          reader.readAsArrayBuffer(file);
+        });
+
+        filePromises.push(filePromise);
+      });
+    });
+
+    // When all files are processed, generate the zip
+    Promise.all(filePromises)
+      .then(() => {
+        zip.generateAsync({ type: 'blob' }).then(content => {
+          // Create a download link
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(content);
+          link.download = 'dataset.zip';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          message.success('Dataset exported successfully!');
+        });
+      })
+      .catch(error => {
+        console.error('Error creating zip file:', error);
+        message.error('Failed to export dataset.');
+      });
   };
 
   const onNextImageClick = () => {
