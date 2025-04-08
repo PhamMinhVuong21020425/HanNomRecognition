@@ -127,11 +127,9 @@ function TopBarClassify() {
                 // Extract the file path components
                 const pathParts = path.split('/');
 
-                // Skip if we don't have a proper directory structure
-                if (pathParts.length < 2) return;
-
                 // Get label from the parent directory name
-                const label = pathParts[pathParts.length - 2];
+                const parentDir = pathParts[pathParts.length - 2];
+                const label = parentDir === 'unlabeled' ? undefined : parentDir;
                 const fileName = pathParts[pathParts.length - 1];
 
                 // Check if it's an image file
@@ -182,7 +180,7 @@ function TopBarClassify() {
             }
 
             processedCount += batch.length;
-            if (processedCount > 100) {
+            if (validImageCount > 100) {
               setIsLoading(false);
               message.success(
                 `Completed processing. Added ${validImageCount} images.`

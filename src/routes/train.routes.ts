@@ -18,10 +18,17 @@ router.post(
   trainController.trainModelClassify
 );
 
+router.post('/classify/result', trainController.trainModelClassifyResult);
+
 router.post(
   '/active-learning',
-  upload.single('dataset'),
+  upload.single('pool'),
   trainController.trainActiveLearning
+);
+
+router.post(
+  '/active-learning/result',
+  trainController.trainActiveLearningResult
 );
 
 export default router;
