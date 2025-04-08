@@ -505,6 +505,7 @@ function ToolHeader({ type }: { type: ProblemType }) {
 
       {/* Training Modal */}
       <TrainingModal
+        type={type}
         visible={isTrainModalVisible}
         setVisible={setIsTrainModalVisible}
         openNotification={openNotification}
