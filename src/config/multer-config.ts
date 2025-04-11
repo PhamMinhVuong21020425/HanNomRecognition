@@ -4,6 +4,7 @@ import multer from 'multer';
 // Allowed file types
 const ALLOWED_FILE_TYPES = [
   // Image types
+  'image/jpg',
   'image/jpeg',
   'image/png',
   'image/gif',
@@ -48,7 +49,9 @@ const storage = multer.diskStorage({
     cb(null, dir); // Storage directory
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '$$' + file.originalname);
+    const uniquePrefix = Math.round(Math.random() * 1e9);
+    const safeFilename = encodeURIComponent(file.originalname);
+    cb(null, `${uniquePrefix}$$${safeFilename}`);
   },
 });
 

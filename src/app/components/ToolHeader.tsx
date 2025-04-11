@@ -145,7 +145,7 @@ function ToolHeader({ type }: { type: ProblemType }) {
         message: title,
         description: message.content.result.message,
         status,
-        created_at: new Date(),
+        created_at: message.created_at,
       };
       openNotification(notificationData);
     });
