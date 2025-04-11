@@ -12,7 +12,7 @@ interface MessageSocket {
   id: string;
   to: string;
   content: Object;
-  timestamp: number;
+  created_at: Date;
 }
 
 let io: Server;
@@ -106,7 +106,7 @@ export const sendSystemMessage = async (userId: string, data: Object) => {
     id: uuidv4(),
     to: userId,
     content: data,
-    timestamp: Date.now(),
+    created_at: new Date(),
   };
 
   // Try to deliver message immediately

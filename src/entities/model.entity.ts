@@ -53,6 +53,9 @@ export class Model {
   })
   status: ModelStatus;
 
+  @Column({ nullable: true })
+  num_classes: number;
+
   @Column({ default: false })
   is_public: boolean;
 
