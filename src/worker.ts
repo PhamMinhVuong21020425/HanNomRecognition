@@ -47,6 +47,8 @@ async function startWorker() {
               const result = await axios.post('/be/train/detect/result', {
                 taskId: task.id,
                 userId: task.userId,
+                modelId: task.modelId,
+                jobId: task.jobId,
                 result: response.data,
               });
 
@@ -83,6 +85,8 @@ async function startWorker() {
                 {
                   taskId: task.id,
                   userId: task.userId,
+                  modelId: task.modelId,
+                  jobId: task.jobId,
                   result: clsResponse.data,
                 }
               );
@@ -121,6 +125,7 @@ async function startWorker() {
                 {
                   taskId: task.id,
                   userId: task.userId,
+                  jobId: task.jobId,
                   result: alResponse.data,
                 }
               );

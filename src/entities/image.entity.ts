@@ -13,9 +13,12 @@ export class Image {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Dataset, dataset => dataset.images)
+  @ManyToOne(() => Dataset, dataset => dataset.images, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'dataset_id' })
   dataset: Dataset;
+
+  @Column()
+  name: string;
 
   @Column()
   path: string;

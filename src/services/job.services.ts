@@ -1,5 +1,5 @@
 import { AppDataSource } from '../config/data-source';
-import { TrainingJob } from '@/entities/training_job.entity';
+import { TrainingJob } from '../entities/training_job.entity';
 
 const jobRepository = AppDataSource.getRepository(TrainingJob);
 
