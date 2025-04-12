@@ -9,10 +9,12 @@ import {
   createImage,
 } from '../services/dataset.services';
 import { User } from '../entities/user.entity';
+import { decodeUTF8 } from '../utils/utf8';
 
 export const allDatasetGet = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const datasets = await getAllDatasets();
+    const userId = req.params.userId as string;
+    const datasets = await getAllDatasets(userId);
     res.json(datasets);
   }
 );
@@ -38,7 +40,7 @@ export const createDatasetPost = asyncHandler(
     const images = req.files as Express.Multer.File[];
     for (const img of images) {
       const path = img.path.replace(/\\/g, '/');
-      const name = encodeURIComponent(img.originalname.split('$$').pop()!);
+      const name = decodeUTF8(img.originalname);
       await createImage({ name, path, dataset });
     }
 

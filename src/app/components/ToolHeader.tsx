@@ -43,14 +43,20 @@ import {
   selectDrawStatus,
   selectShapes,
   selectSelShapeIndex,
+  selectSelDataset,
 } from '@/lib/redux';
 import { connectSocket } from '@/lib/socket';
-import { imageSizeFactory, formatDateToString } from '@/utils/general';
+import {
+  imageSizeFactory,
+  formatDateToString,
+  getObjectUrlFromPath,
+} from '@/utils/general';
 import { Notification } from '@/entities/notification.entity';
 import { NotificationStatus } from '@/enums/NotificationStatus';
 import { ProblemType } from '@/enums/ProblemType';
 import TrainingModal from './TrainingModal';
 import ActiveLearningModal from './ActiveLearningModal';
+import { ImageType } from '@/types/ImageType';
 
 function ToolHeader({ type }: { type: ProblemType }) {
   const router = useRouter();
@@ -68,6 +74,7 @@ function ToolHeader({ type }: { type: ProblemType }) {
   const drawStatus = useAppSelector(selectDrawStatus);
   const shapes = useAppSelector(selectShapes);
   const selShapeIndex = useAppSelector(selectSelShapeIndex);
+  const selDataset = useAppSelector(selectSelDataset);
 
   const files = useAppSelector(selectImagesRedux);
   const isFirstRender = useRef(true);
@@ -180,6 +187,45 @@ function ToolHeader({ type }: { type: ProblemType }) {
       socket.off('receive_message');
     };
   }, []);
+
+  useEffect(() => {
+    if (!selDataset || selDataset.images.length === 0) return;
+
+    const imagesOfDataset: ImageType[] = [];
+    const objUrlPromises = selDataset.images.map(img =>
+      getObjectUrlFromPath(img.path)
+    );
+
+    Promise.all(objUrlPromises).then(urls => {
+      urls.forEach((url, index) => {
+        if (url) {
+          imagesOfDataset.push({
+            obj_url: url,
+            name: selDataset.images[index].name,
+          });
+        }
+      });
+
+      const newImageFiles = [...imageFiles, ...imagesOfDataset];
+      const newImageSizes = newImageFiles.map((_, index) =>
+        imageSizes[index] ? imageSizes[index] : imageSizeFactory({})
+      );
+      const newShapes = newImageFiles.map((_, index) =>
+        shapes[index] ? shapes[index] : []
+      );
+
+      dispatch(
+        setImageFiles({
+          imageFiles: newImageFiles,
+          selDrawImageIndex: selDrawImageIndex > 0 ? selDrawImageIndex : 0,
+          imageSizes: newImageSizes,
+          drawStatus,
+          shapes: newShapes,
+          selShapeIndex,
+        })
+      );
+    });
+  }, [selDataset]);
 
   const handleGoHome = () => {
     Modal.confirm({

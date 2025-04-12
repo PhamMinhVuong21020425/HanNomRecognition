@@ -25,15 +25,22 @@ import Footer from '../components/Footer';
 import Loading from '../components/Loading';
 import StepAnnotation from '../components/StepAnnotation';
 import CreateModel from '../components/CreateModel';
+import ImageFromServer from '../components/ImageFromServer';
 import {
   useAppDispatch,
   useAppSelector,
   selectLanguage,
   selectUser,
   setImagesRedux,
+  selectAllDatasets,
+  getDatasetsOfUserAsync,
+  setSelDataset,
 } from '@/lib/redux';
 import type { ImageType } from '@/types/ImageType';
 import { ProblemType } from '@/enums/ProblemType';
+import { Dataset } from '@/entities/dataset.entity';
+import { getObjectUrlFromPath } from '@/utils/general';
+import { encodeUTF8, decodeUTF8 } from '@/utils/utf8';
 
 interface DatasetForm {
   name: string;
@@ -42,27 +49,11 @@ interface DatasetForm {
   type: ProblemType;
 }
 
-const recentHistory = [
-  {
-    id: 1,
-    name: 'History 1',
-    date: '6/2/2025',
-    image:
-      'https://ichef.bbci.co.uk/ace/ws/640/cpsprodpb/a58b/live/02223d90-d9e5-11ed-985e-f3049d8cc016.jpg.webp',
-  },
-  {
-    id: 2,
-    name: 'History 2',
-    date: '8/2/2025',
-    image:
-      'https://static-images.vnncdn.net/files/publish/2022/12/21/screen-shot-2022-12-21-at-191604-1423.png',
-  },
-];
-
 function ImportImage() {
   const router = useRouter();
-  const userData = useAppSelector(selectUser);
   const dispatch = useAppDispatch();
+  const userData = useAppSelector(selectUser);
+  const recentHistory = useAppSelector(selectAllDatasets);
   const locale = useAppSelector(selectLanguage);
   const intl = getIntl(locale);
   const createModelRef = useRef<HTMLDivElement>(null);
@@ -97,6 +88,11 @@ function ImportImage() {
     document.title = intl.formatMessage({ id: 'metadata.import.title' });
   }, [locale]);
 
+  useEffect(() => {
+    if (!userData) return;
+    dispatch(getDatasetsOfUserAsync(userData.id));
+  }, []);
+
   const handleClick = () => {
     if (createModelRef?.current) {
       createModelRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -123,7 +119,7 @@ function ImportImage() {
     const files = Array.from(e.dataTransfer.files);
     const imageFiles = files.map(
       file =>
-        new File([file], `${Date.now()}$$${file.name}`, {
+        new File([file], `${Date.now()}$$${encodeUTF8(file.name)}`, {
           type: file.type,
         })
     );
@@ -132,7 +128,7 @@ function ImportImage() {
 
     const newPreviews = imageFiles.map(file => {
       const obj_url = URL.createObjectURL(file);
-      return { obj_url, name: file.name };
+      return { obj_url, name: decodeUTF8(file.name) };
     });
     setPreviews([...previews, ...newPreviews]);
   };
@@ -145,7 +141,7 @@ function ImportImage() {
 
     const newFiles = Array.from(files).map(
       file =>
-        new File([file], `${Date.now()}$$${file.name}`, {
+        new File([file], `${Date.now()}$$${encodeUTF8(file.name)}`, {
           type: file.type,
         })
     );
@@ -154,7 +150,7 @@ function ImportImage() {
 
     const newPreviews = newFiles.map(file => {
       const obj_url = URL.createObjectURL(file);
-      return { obj_url, name: file.name };
+      return { obj_url, name: decodeUTF8(file.name) };
     });
     setPreviews([...previews, ...newPreviews]);
 
@@ -228,10 +224,11 @@ function ImportImage() {
         },
       });
 
-      const data = response.data;
-      if (!data) {
+      const dataset = response.data;
+      if (!dataset) {
         throw new Error('Dataset creation failed');
       }
+      dispatch(setSelDataset(dataset));
 
       setImages([]);
       setPreviews([]);
@@ -246,6 +243,30 @@ function ImportImage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGoDataset = async (dataset: Dataset) => {
+    setIsLoading(true);
+    dispatch(setSelDataset(dataset));
+
+    const imagesOfDataset: ImageType[] = [];
+    for (const img of dataset.images) {
+      const fileUrl = await getObjectUrlFromPath(img.path);
+      if (fileUrl) {
+        imagesOfDataset.push({
+          obj_url: fileUrl,
+          name: img.name,
+        });
+      }
+    }
+    dispatch(setImagesRedux(imagesOfDataset));
+
+    if (dataset.type === ProblemType.DETECT) {
+      router.push(`/annotation-tool`);
+    } else {
+      router.push(`/classify-tool`);
+    }
+    setIsLoading(false);
   };
 
   const renderPreviews = () => {
@@ -725,9 +746,13 @@ function ImportImage() {
 
               <div className="history-grid">
                 {recentHistory.map(item => (
-                  <div key={item.id} className="history-card">
+                  <div
+                    key={item.id}
+                    className="history-card"
+                    onClick={() => handleGoDataset(item)}
+                  >
                     <div className="history-image">
-                      <img src={item.image} alt={item.name} />
+                      <ImageFromServer filePath={item.images[0].path} />
                       <div className="image-overlay">
                         <button className="view-button">View Details</button>
                       </div>
@@ -736,7 +761,8 @@ function ImportImage() {
                       <div className="info-text">
                         <h3 className="history-name">{item.name}</h3>
                         <span className="history-date">
-                          Created at {item.date}
+                          Updated at{' '}
+                          {new Date(item.updated_at).toLocaleString()}
                         </span>
                       </div>
                       <button className="action-button">
