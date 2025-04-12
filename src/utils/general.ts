@@ -1,3 +1,4 @@
+import axios from '@/lib/axios';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
@@ -65,6 +66,21 @@ export const normalizeFileName = (fileName: string) => {
     .replace(/\s+/g, '_') // Replace spaces with underscores
     .replace(/[^a-z0-9-_\.]/g, '') // Remove non-alphanumeric characters
     .replace(/\.+$/, ''); // Remove trailing dots
+};
+
+// fetch file from server
+export const getObjectUrlFromPath = async (filePath: string) => {
+  const response = await axios.post(
+    '/be/files/view',
+    {
+      filePath,
+    },
+    {
+      responseType: 'blob',
+    }
+  );
+  const objectUrl = URL.createObjectURL(response.data);
+  return objectUrl;
 };
 
 // fetch file from object url

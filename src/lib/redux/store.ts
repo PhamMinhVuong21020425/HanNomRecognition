@@ -33,7 +33,7 @@ const storage =
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['app', 'user', 'event'],
+  whitelist: ['app', 'user', 'dataset'],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

@@ -6,13 +6,17 @@ const datasetRepository = AppDataSource.getRepository(Dataset);
 const imageRepository = AppDataSource.getRepository(Image);
 
 export const getDatasetById = async (id: string) => {
-  const dataset = await datasetRepository.findOneBy({ id });
+  const dataset = await datasetRepository.findOne({
+    where: { id },
+    relations: { images: true, trainingJobs: true },
+  });
   return dataset;
 };
 
-export const getAllDatasets = async () => {
+export const getAllDatasets = async (userId: string) => {
   const datasets = await datasetRepository.find({
-    where: { is_public: true },
+    where: [{ is_public: true }, { user: { id: userId } }],
+    order: { updated_at: 'DESC' },
   });
   return datasets;
 };
@@ -20,6 +24,8 @@ export const getAllDatasets = async () => {
 export const getDatasetsByUserId = async (userId: string) => {
   const datasets = await datasetRepository.find({
     where: { user: { id: userId } },
+    order: { updated_at: 'DESC' },
+    relations: { images: true },
   });
   return datasets;
 };

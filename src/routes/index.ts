@@ -1,11 +1,14 @@
 import { Router } from 'express';
-import homeController from '../controllers/home.controller';
 import authRouter from './auth.routes';
 import trainRouter from './train.routes';
 import userRouter from './user.routes';
 import datasetRouter from './dataset.routes';
 import jobRouter from './job.routes';
 import notiRouter from './notification.routes';
+import {
+  getFileServer,
+  downloadFileServer,
+} from '../controllers/home.controller';
 
 const router: Router = Router();
 
@@ -15,6 +18,7 @@ router.use('/users', userRouter);
 router.use('/datasets', datasetRouter);
 router.use('/jobs', jobRouter);
 router.use('/notis', notiRouter);
-router.get('/', homeController);
+router.post('/files/view', getFileServer);
+router.post('/files/download', downloadFileServer);
 
 export default router;

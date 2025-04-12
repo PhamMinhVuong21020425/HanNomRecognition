@@ -50,8 +50,7 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniquePrefix = Math.round(Math.random() * 1e9);
-    const safeFilename = encodeURIComponent(file.originalname);
-    cb(null, `${uniquePrefix}$$${safeFilename}`);
+    cb(null, `${uniquePrefix}$$${file.originalname}`);
   },
 });
 
