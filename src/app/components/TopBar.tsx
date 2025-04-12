@@ -2,7 +2,7 @@ import '../scss/TopBar.scss';
 import JSZip from 'jszip';
 import { ChangeEvent, useState } from 'react';
 import { shallowEqual } from 'react-redux';
-import { message, Dropdown, Button, Tooltip } from 'antd';
+import { message, Dropdown, Button, Tooltip, Tag } from 'antd';
 import {
   FileImageOutlined,
   FileTextOutlined,
@@ -11,11 +11,12 @@ import {
   RedoOutlined,
   LeftOutlined,
   RightOutlined,
-  FilterOutlined,
+  UnlockOutlined,
+  LockOutlined,
+  ClockCircleOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import { IoMenuSharp } from 'react-icons/io5';
-import { FaRegQuestionCircle } from 'react-icons/fa';
-import { BiInfoCircle, BiFullscreen, BiExitFullscreen } from 'react-icons/bi';
 
 import {
   ANNOTATION_TYPES,
@@ -48,10 +49,12 @@ import {
   selectDrawStatus,
   selectShapes,
   selectSelShapeIndex,
+  selectSelDataset,
 } from '@/lib/redux';
 import type { ImageSize } from '@/lib/redux';
 import type { ImageType } from '@/types/ImageType';
 import type { AnnotationFile } from '@/types/AnnotationType';
+import DatasetInfoModal from './DatasetInfoModal';
 import Loading from './Loading';
 
 function TopBar() {
@@ -63,8 +66,9 @@ function TopBar() {
   const drawStatus = useAppSelector(selectDrawStatus);
   const shapes = useAppSelector(selectShapes);
   const selShapeIndex = useAppSelector(selectSelShapeIndex);
+  const selDataset = useAppSelector(selectSelDataset);
 
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const onFilesChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -262,11 +266,6 @@ function TopBar() {
     dispatch(setSelDrawImageIndex({ selDrawImageIndex: index }));
   };
 
-  const onFullScreen = () => {
-    setIsFullScreen(!isFullScreen);
-    message.info(isFullScreen ? 'Exited full screen' : 'Entered full screen');
-  };
-
   const onDownload = async (type: 'COCO' | 'YOLO' | 'PASCAL_VOC') => {
     if (imageFiles.length === 0) return;
 
@@ -439,45 +438,55 @@ function TopBar() {
         </div>
 
         <div className="content-right">
-          <Tooltip title="Toggle Full Screen" className="mr-2">
-            <button
-              type="button"
-              className="right-button"
-              onClick={onFullScreen}
-            >
-              <span className="react-icon">
-                {isFullScreen ? <BiExitFullscreen /> : <BiFullscreen />}
-              </span>
-              <span className="tag-name">Full Screen</span>
-            </button>
-          </Tooltip>
+          <div
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => setIsModalOpen(true)}
+          >
+            <div className="dataset-icon flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors duration-200">
+              {selDataset.is_public ? (
+                <UnlockOutlined className="text-lg" />
+              ) : (
+                <LockOutlined className="text-lg" />
+              )}
+            </div>
 
-          <Tooltip title="User Guide">
-            <button type="button" className="right-button">
-              <span className="react-icon">
-                <FaRegQuestionCircle />
-              </span>
-              <span className="tag-name">Guide</span>
-            </button>
-          </Tooltip>
+            <div className="dataset-info flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-medium text-base text-gray-800 group-hover:text-blue-600 transition-colors duration-200">
+                  {selDataset.name}
+                </span>
+                <Tag
+                  color={selDataset.type === 'detect' ? 'purple' : 'orange'}
+                  className="m-0"
+                >
+                  {selDataset.type === 'detect'
+                    ? 'Detection'
+                    : 'Classification'}
+                </Tag>
+              </div>
 
-          <Tooltip title="Information">
-            <button type="button" className="right-button">
-              <span className="info-icon">
-                <BiInfoCircle />
-              </span>
-              <span className="tag-name">Info</span>
-            </button>
-          </Tooltip>
+              <div className="flex items-center text-sm text-gray-500 gap-4">
+                <div className="flex items-center gap-1">
+                  <ClockCircleOutlined className="text-green-500" />
+                  <span>
+                    {new Date(selDataset.created_at).toLocaleDateString()}
+                  </span>
+                </div>
 
-          <Tooltip title="Apply Filters">
-            <button type="button" className="right-button">
-              <span className="icon">
-                <FilterOutlined />
-              </span>
-              <span className="tag-name">Filters</span>
-            </button>
-          </Tooltip>
+                <div className="flex items-center gap-1">
+                  <EditOutlined className="text-blue-500" />
+                  <span>
+                    {new Date(selDataset.updated_at).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DatasetInfoModal
+            dataset={selDataset}
+            isModalOpen={isModalOpen}
+            setIsModalOpen={setIsModalOpen}
+          />
         </div>
       </div>
       {isLoading && (

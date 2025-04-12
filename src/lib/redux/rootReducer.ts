@@ -9,6 +9,7 @@ import {
   eventReducer,
   annotationReducer,
   filesReducer,
+  datasetReducer,
 } from './slices';
 
 export const rootReducer = combineReducers({
@@ -18,4 +19,5 @@ export const rootReducer = combineReducers({
   event: eventReducer,
   annotation: annotationReducer,
   files: filesReducer,
+  dataset: datasetReducer,
 });
