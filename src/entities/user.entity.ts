@@ -50,7 +50,7 @@ export class User {
   @Column({ type: 'date', nullable: true })
   birthday: Date;
 
-  @Column({ nullable: true })
+  @Column('text', { nullable: true })
   avatar_url: string;
 
   @Column({ nullable: true })

@@ -26,7 +26,7 @@ export const sortShapesByColumn = (shapesByImageIndex: Shape[]): Shape[][] => {
       center: getShapeCenter(shape),
     }));
 
-  const columnTolerance = 20; // Adjust based on your character width
+  const columnTolerance = 10; // Adjust based on your character width
   const columns: Array<typeof visibleShapes> = [];
 
   // Group characters into columns
@@ -69,7 +69,7 @@ export const sortShapesByRow = (shapesByImageIndex: Shape[]): Shape[][] => {
       center: getShapeCenter(shape),
     }));
 
-  const rowTolerance = 20; // Adjust based on your character height
+  const rowTolerance = 10; // Adjust based on your character height
   const rows: Array<typeof visibleShapes> = [];
 
   // Group characters into rows

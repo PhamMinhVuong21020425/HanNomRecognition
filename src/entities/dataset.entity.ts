@@ -40,7 +40,10 @@ export class Dataset {
   })
   type: ProblemType;
 
-  @Column({ nullable: true })
+  @Column('text', { nullable: true })
+  avatar_path: string;
+
+  @Column('text', { nullable: true })
   zip_path: string;
 
   @Column({ default: false })

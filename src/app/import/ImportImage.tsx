@@ -41,6 +41,7 @@ import { ProblemType } from '@/enums/ProblemType';
 import { Dataset } from '@/entities/dataset.entity';
 import { getObjectUrlFromPath } from '@/utils/general';
 import { encodeUTF8, decodeUTF8 } from '@/utils/utf8';
+import { message } from 'antd';
 
 interface DatasetForm {
   name: string;
@@ -176,6 +177,7 @@ function ImportImage() {
     try {
       setIsLoading(true);
       dispatch(setImagesRedux(previews));
+      dispatch(setSelDataset(null));
       router.push('/annotation-tool');
     } catch (error) {
       console.error('Error during upload:', error);
@@ -206,6 +208,16 @@ function ImportImage() {
 
   const handleCreateDataset = async () => {
     try {
+      if (!userData) {
+        message.error('Please log in to create dataset');
+        return;
+      }
+
+      if (!datasetForm.name.trim()) {
+        message.error('Please enter dataset name');
+        return;
+      }
+
       setIsLoading(true);
       dispatch(setImagesRedux(previews));
 
@@ -249,8 +261,11 @@ function ImportImage() {
     setIsLoading(true);
     dispatch(setSelDataset(dataset));
 
+    const response = await axios.get(`/be/datasets/${dataset.id}/images`);
+    const images = response.data ?? [];
+
     const imagesOfDataset: ImageType[] = [];
-    for (const img of dataset.images) {
+    for (const img of images) {
       const fileUrl = await getObjectUrlFromPath(img.path);
       if (fileUrl) {
         imagesOfDataset.push({
@@ -752,10 +767,14 @@ function ImportImage() {
                     onClick={() => handleGoDataset(item)}
                   >
                     <div className="history-image">
-                      <ImageFromServer filePath={item.images[0].path} />
-                      <div className="image-overlay">
-                        <button className="view-button">View Details</button>
-                      </div>
+                      {item.avatar_path ? (
+                        <ImageFromServer filePath={item.avatar_path} />
+                      ) : (
+                        <img
+                          src="https://cdn-icons-png.freepik.com/256/1449/1449314.png"
+                          alt={item.name}
+                        />
+                      )}
                     </div>
                     <div className="history-info">
                       <div className="info-text">

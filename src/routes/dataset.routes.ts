@@ -16,6 +16,8 @@ router.post('/delete', datasetController.deleteDatasetPost);
 
 router.get('/all/:userId', datasetController.allDatasetGet);
 
+router.get('/:datasetId/images', datasetController.imagesOfDatasetGet);
+
 router.get('/:userId', datasetController.datasetOfUserGet);
 
 export default router;
