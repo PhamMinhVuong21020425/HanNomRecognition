@@ -20,10 +20,10 @@ export class Image {
   @Column()
   name: string;
 
-  @Column()
+  @Column('text')
   path: string;
 
-  @Column({ nullable: true })
+  @Column('mediumtext', { nullable: true })
   label: string;
 
   @Column({ default: false })

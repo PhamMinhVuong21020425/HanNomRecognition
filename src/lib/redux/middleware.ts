@@ -1,5 +1,8 @@
 /* Core */
+import { debounce } from 'lodash';
 import { createLogger } from 'redux-logger';
+import { Middleware } from '@reduxjs/toolkit';
+import { saveAnnotationData } from './slices/annotationSlice/thunkActions';
 
 export const loggerMiddleware = [
   createLogger({
@@ -16,3 +19,28 @@ export const loggerMiddleware = [
     predicate: () => typeof window !== 'undefined',
   }),
 ];
+
+const ACTIONS_TO_WATCH = [
+  'annotation/setImageFiles',
+  'annotation/setLabelImageFile',
+  'annotation/setShapes',
+  'annotation/deleteSelShape',
+  'annotation/deleteAllShapes',
+];
+
+const debouncedSave = debounce(dispatch => {
+  dispatch(saveAnnotationData());
+}, 2000);
+
+export const saveAnnotationMiddleware: Middleware =
+  ({ dispatch }) =>
+  next =>
+  (action: any) => {
+    const result = next(action);
+
+    if (ACTIONS_TO_WATCH.includes(action.type)) {
+      debouncedSave(dispatch);
+    }
+
+    return result;
+  };

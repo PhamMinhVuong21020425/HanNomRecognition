@@ -16,7 +16,7 @@ function ImageList({ type }: { type: ProblemType }) {
 
   useEffect(() => {
     if (selDrawImageIndex !== -1 && containerRef.current) {
-      const itemName = imageFiles[selDrawImageIndex].name;
+      const itemName = imageFiles[selDrawImageIndex]?.name;
       const element = document.getElementById(`image-item-${itemName}`);
 
       if (element && containerRef.current) {

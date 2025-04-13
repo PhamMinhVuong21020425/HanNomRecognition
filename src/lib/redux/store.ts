@@ -9,7 +9,7 @@ import createWebStorage from 'redux-persist/lib/storage/createWebStorage';
 
 /* Instruments */
 import { rootReducer } from './rootReducer';
-import { loggerMiddleware } from './middleware';
+import { saveAnnotationMiddleware, loggerMiddleware } from './middleware';
 
 const createNoopStorage = () => {
   return {
@@ -43,7 +43,9 @@ export const reduxStore = configureStore({
   middleware: getDefaultMiddleware => {
     return getDefaultMiddleware({
       serializableCheck: false,
-    }).concat(loggerMiddleware);
+    })
+      .concat(saveAnnotationMiddleware)
+      .concat(loggerMiddleware);
   },
 });
 

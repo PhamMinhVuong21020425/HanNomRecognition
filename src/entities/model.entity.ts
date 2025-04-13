@@ -37,7 +37,7 @@ export class Model {
   @UpdateDateColumn({ nullable: true })
   updated_at: Date;
 
-  @Column({ nullable: true })
+  @Column('text', { nullable: true })
   path: string;
 
   @Column({

@@ -1,8 +1,7 @@
-import axios from '@/lib/axios';
+import axios from '../lib/axios';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
-import { pointsX } from '@/app/components/SVGWrapper';
 
 import {
   COCO_FOLDER_NAME,
@@ -17,7 +16,7 @@ import type {
   CocoCategory,
   CocoImage,
   CocoDataset,
-} from '@/types/CocoTypes';
+} from '../types/CocoTypes';
 
 export const getImage = (imageUrl: string, fileName = 'image.jpg') =>
   new Promise((resolve, reject) => {
@@ -177,7 +176,7 @@ export const formatDateToString = (date: Date) => {
 
 export function getShapeXYMaxMin(paths: Coordinate[]) {
   return {
-    array: pointsX,
+    array: [],
     xmin: paths.reduce(
       (acc, cur) => (acc < cur.x ? acc : cur.x),
       Number.MAX_SAFE_INTEGER

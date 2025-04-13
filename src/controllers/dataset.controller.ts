@@ -7,6 +7,7 @@ import {
   updateDataset,
   deleteDatasetById,
   createImage,
+  getImagesByDatasetId,
 } from '../services/dataset.services';
 import { User } from '../entities/user.entity';
 import { decodeUTF8 } from '../utils/utf8';
@@ -23,6 +24,13 @@ export const datasetOfUserGet = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const datasets = await getDatasetsByUserId(req.params.userId);
     res.json(datasets);
+  }
+);
+
+export const imagesOfDatasetGet = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const images = await getImagesByDatasetId(req.params.datasetId);
+    res.json(images);
   }
 );
 
