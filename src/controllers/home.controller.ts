@@ -3,6 +3,8 @@ import path from 'path';
 import mime from 'mime-types';
 import asyncHandler from 'express-async-handler';
 import { Request, Response, NextFunction } from 'express';
+import { saveAnnotationDataset } from '../services/dataset.services';
+import { ImageType } from '@/types/ImageType';
 
 export const getFileServer = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -65,6 +67,32 @@ export const downloadFileServer = asyncHandler(
         `Error downloading file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
       res.status(500).json({ error: 'Failed to download file' });
+    }
+  }
+);
+
+export const saveAnnotationDataToDatabase = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const datasetId = req.body.datasetId as string;
+    const imageFiles = JSON.parse(req.body.imageFiles) as ImageType[];
+    const labels = JSON.parse(req.body.labels) as (string | undefined)[];
+    const isLabels = JSON.parse(req.body.isLabels) as boolean[];
+    const files = req.files as Express.Multer.File[];
+
+    try {
+      await saveAnnotationDataset(
+        datasetId,
+        imageFiles,
+        files,
+        labels,
+        isLabels
+      );
+      res.status(200).json({ message: 'Data saved successfully' });
+    } catch (error) {
+      console.error(
+        `Error saving annotation data: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+      res.status(500).json({ error: 'Failed to save annotation data' });
     }
   }
 );

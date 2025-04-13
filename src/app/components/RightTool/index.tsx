@@ -39,7 +39,7 @@ function RightToolbar({ type }: { type: ProblemType }) {
         <span style={{ fontWeight: 'bolder' }}>
           <FontAwesomeIcon icon={faTag} style={{ marginRight: '8px' }} />
           {type === ProblemType.DETECT
-            ? `Labels (${selDrawImageIndex !== -1 ? shapes[selDrawImageIndex].length : 0})`
+            ? `Labels (${selDrawImageIndex !== -1 && shapes[selDrawImageIndex] ? shapes[selDrawImageIndex].length : 0})`
             : `Labels (${labelClassify ? 1 : 0})`}
         </span>
       ),

@@ -56,6 +56,6 @@ export class TrainingJob {
   @Column({ type: 'datetime', nullable: true })
   completed_at: Date;
 
-  @Column({ nullable: true })
+  @Column('text', { nullable: true })
   result_path: string;
 }

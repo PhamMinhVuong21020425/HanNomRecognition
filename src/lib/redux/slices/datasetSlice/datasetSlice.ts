@@ -8,13 +8,13 @@ import { getAllDatasetsAsync, getDatasetsOfUserAsync } from './thunkActions';
 /* Types */
 export interface DatasetState {
   datasets: Dataset[];
-  selDataset: Dataset;
+  selDataset: Dataset | null;
   status: 'idle' | 'loading' | 'failed';
 }
 
 const initialState: DatasetState = {
   datasets: [],
-  selDataset: {} as Dataset,
+  selDataset: null,
   status: 'idle',
 } satisfies DatasetState as DatasetState;
 
@@ -24,7 +24,7 @@ export const datasetSlice = createSlice({
   initialState,
   // The `reducers` field lets us define reducers and generate associated actions
   reducers: {
-    setSelDataset: (state, action: PayloadAction<Dataset>) => {
+    setSelDataset: (state, action: PayloadAction<Dataset | null>) => {
       state.selDataset = action.payload;
     },
   },

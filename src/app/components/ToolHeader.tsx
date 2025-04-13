@@ -50,6 +50,7 @@ import {
   imageSizeFactory,
   formatDateToString,
   getObjectUrlFromPath,
+  parseCoco,
 } from '@/utils/general';
 import { Notification } from '@/entities/notification.entity';
 import { NotificationStatus } from '@/enums/NotificationStatus';
@@ -57,6 +58,7 @@ import { ProblemType } from '@/enums/ProblemType';
 import TrainingModal from './TrainingModal';
 import ActiveLearningModal from './ActiveLearningModal';
 import { ImageType } from '@/types/ImageType';
+import { Image } from '@/entities/image.entity';
 
 function ToolHeader({ type }: { type: ProblemType }) {
   const router = useRouter();
@@ -189,43 +191,50 @@ function ToolHeader({ type }: { type: ProblemType }) {
   }, []);
 
   useEffect(() => {
-    if (!selDataset || selDataset.images.length === 0) return;
+    if (!selDataset) return;
 
-    const imagesOfDataset: ImageType[] = [];
-    const objUrlPromises = selDataset.images.map(img =>
-      getObjectUrlFromPath(img.path)
-    );
+    axios.get(`/be/datasets/${selDataset.id}/images`).then(response => {
+      const images: Image[] = response.data ?? [];
 
-    Promise.all(objUrlPromises).then(urls => {
-      urls.forEach((url, index) => {
-        if (url) {
-          imagesOfDataset.push({
-            obj_url: url,
-            name: selDataset.images[index].name,
-          });
-        }
+      const imagesOfDataset: ImageType[] = [];
+      const objUrlPromises = images.map(img => getObjectUrlFromPath(img.path));
+
+      Promise.all(objUrlPromises).then(urls => {
+        urls.forEach((url, index) => {
+          if (url) {
+            imagesOfDataset.push({
+              obj_url: url,
+              name: images[index].name,
+              label:
+                selDataset.type === ProblemType.CLASSIFY
+                  ? images[index].label
+                  : undefined,
+            });
+          }
+        });
+
+        const newImageSizes = imagesOfDataset.map((_, index) =>
+          imageSizes[index] ? imageSizes[index] : imageSizeFactory({})
+        );
+
+        const newShapes =
+          selDataset.type === ProblemType.DETECT
+            ? images.map(img => parseCoco(img.label))
+            : [];
+
+        dispatch(
+          setImageFiles({
+            imageFiles: imagesOfDataset,
+            selDrawImageIndex: selDrawImageIndex > 0 ? selDrawImageIndex : 0,
+            imageSizes: newImageSizes,
+            drawStatus,
+            shapes: newShapes,
+            selShapeIndex,
+          })
+        );
       });
-
-      const newImageFiles = [...imageFiles, ...imagesOfDataset];
-      const newImageSizes = newImageFiles.map((_, index) =>
-        imageSizes[index] ? imageSizes[index] : imageSizeFactory({})
-      );
-      const newShapes = newImageFiles.map((_, index) =>
-        shapes[index] ? shapes[index] : []
-      );
-
-      dispatch(
-        setImageFiles({
-          imageFiles: newImageFiles,
-          selDrawImageIndex: selDrawImageIndex > 0 ? selDrawImageIndex : 0,
-          imageSizes: newImageSizes,
-          drawStatus,
-          shapes: newShapes,
-          selShapeIndex,
-        })
-      );
     });
-  }, [selDataset]);
+  }, []);
 
   const handleGoHome = () => {
     Modal.confirm({
@@ -234,7 +243,8 @@ function ToolHeader({ type }: { type: ProblemType }) {
         'Are you sure you want to go back to the Home page? Data may not be saved!',
       okText: 'OK',
       cancelText: 'Cancel',
-      onOk: () => router.push('/'),
+      onOk: () => router.push('/import'),
+      onCancel: () => setActiveTab(type),
     });
   };
 
@@ -246,6 +256,7 @@ function ToolHeader({ type }: { type: ProblemType }) {
       okText: 'OK',
       cancelText: 'Cancel',
       onOk: () => router.push('/your-model'),
+      onCancel: () => setActiveTab(type),
     });
   };
 
@@ -381,21 +392,19 @@ function ToolHeader({ type }: { type: ProblemType }) {
             <span className="nav-text">Model</span>
           </div>
 
-          <a
-            href="/annotation-tool"
-            className={`nav-item ${activeTab === 'detect' ? 'active' : ''}`}
+          <div
+            className={`nav-item ${activeTab === 'detect' ? 'active' : 'disabled'}`}
           >
             <FontAwesomeIcon icon={faObjectGroup} className="nav-icon" />
             <span className="nav-text">Detection</span>
-          </a>
+          </div>
 
-          <a
-            href="/classify-tool"
-            className={`nav-item ${activeTab === 'classify' ? 'active' : ''}`}
+          <div
+            className={`nav-item ${activeTab === 'classify' ? 'active' : 'disabled'}`}
           >
             <FontAwesomeIcon icon={faProjectDiagram} className="nav-icon" />
             <span className="nav-text">Classification</span>
-          </a>
+          </div>
         </div>
       </div>
 

@@ -481,9 +481,9 @@ function SVGWrapper() {
       return { href: '', width: 0, height: 0 };
     }
     return {
-      href: imageFiles[selDrawImageIndex].obj_url,
-      width: imageSizes[selDrawImageIndex].width,
-      height: imageSizes[selDrawImageIndex].height,
+      href: imageFiles[selDrawImageIndex]?.obj_url,
+      width: imageSizes[selDrawImageIndex]?.width,
+      height: imageSizes[selDrawImageIndex]?.height,
     };
   }, [imageFiles, selDrawImageIndex, imageSizes]);
 
@@ -781,7 +781,7 @@ function SVGWrapper() {
   };
 
   const handleClickPath = (imageName: string) => {
-    if (shapes[selDrawImageIndex] && shapes[selDrawImageIndex].length > 0)
+    if (shapes[selDrawImageIndex] && shapes[selDrawImageIndex]?.length > 0)
       return;
 
     // danh sách tất cả các shapes đang có, phải kiểu dữ liệu mảng

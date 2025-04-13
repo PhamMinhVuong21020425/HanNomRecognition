@@ -127,7 +127,7 @@ const DatasetInfoModal = (props: DatasetInfoModalProps) => {
             </Tooltip>
           </Card>
 
-          <Card size="small" className="bg-gray-50" bordered={false}>
+          <Card size="small" className="bg-gray-50" variant={'borderless'}>
             <Tooltip title={new Date(dataset.updated_at).toLocaleString()}>
               <div className="flex items-center">
                 <EditOutlined className="text-blue-500 mr-2" />
