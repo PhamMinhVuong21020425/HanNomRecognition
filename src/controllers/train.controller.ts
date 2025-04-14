@@ -7,6 +7,7 @@ import { createJob, updateJob } from '../services/job.services';
 import { ProblemType } from '../enums/ProblemType';
 import { ModelStatus } from '../enums/ModelStatus';
 import { User } from '../entities/user.entity';
+import { Dataset } from '../entities/dataset.entity';
 import { TrainingJobStatus } from '../enums/TrainingJobStatus';
 
 export const trainModelDetect = asyncHandler(
@@ -20,7 +21,6 @@ export const trainModelDetect = asyncHandler(
       name: req.body.modelName,
       description: req.body.description,
       type: ProblemType.DETECT,
-      created_at: new Date(),
       user: { id: req.body.userId } as User,
     });
     console.log(`[✔] Model created:`, newModel);
@@ -29,6 +29,7 @@ export const trainModelDetect = asyncHandler(
       epochs: req.body.epochs,
       batch_size: req.body.batchSize,
       model: newModel,
+      dataset: { id: req.body.datasetId } as Dataset,
       user: { id: req.body.userId } as User,
     });
 
@@ -57,14 +58,20 @@ export const trainModelDetectResult = asyncHandler(
     await updateModel(data.modelId, {
       accuracy: data.result.metrics['mAP@50-95'],
       path: data.result.best_model_path,
-      status: ModelStatus.COMPLETED,
+      status:
+        data.result.status === 'error'
+          ? ModelStatus.FAILED
+          : ModelStatus.COMPLETED,
     });
 
     // Update job with the result
     await updateJob(data.jobId, {
-      status: TrainingJobStatus.COMPLETED,
       completed_at: new Date(),
       result_path: data.result.best_model_path,
+      status:
+        data.result.status === 'error'
+          ? TrainingJobStatus.FAILED
+          : TrainingJobStatus.COMPLETED,
     });
 
     // Send event to all connected clients
@@ -85,7 +92,6 @@ export const trainModelClassify = asyncHandler(
       name: req.body.modelName,
       description: req.body.description,
       type: ProblemType.CLASSIFY,
-      created_at: new Date(),
       user: { id: req.body.userId } as User,
     });
     console.log(`[✔] Model created:`, newModel);
@@ -94,6 +100,7 @@ export const trainModelClassify = asyncHandler(
       epochs: req.body.epochs,
       batch_size: req.body.batchSize,
       model: newModel,
+      dataset: { id: req.body.datasetId } as Dataset,
       user: { id: req.body.userId } as User,
     });
 
@@ -123,14 +130,20 @@ export const trainModelClassifyResult = asyncHandler(
       accuracy: data.result.best_val_acc,
       path: data.result.model_weights,
       num_classes: data.result.num_classes,
-      status: ModelStatus.COMPLETED,
+      status:
+        data.result.status === 'error'
+          ? ModelStatus.FAILED
+          : ModelStatus.COMPLETED,
     });
 
     // Update job with the result
     await updateJob(data.jobId, {
-      status: TrainingJobStatus.COMPLETED,
       completed_at: new Date(),
       result_path: data.result.model_weights,
+      status:
+        data.result.status === 'error'
+          ? TrainingJobStatus.FAILED
+          : TrainingJobStatus.COMPLETED,
     });
 
     // Send event to all connected clients
@@ -150,6 +163,7 @@ export const trainActiveLearning = asyncHandler(
     const newJob = await createJob({
       n_samples: req.body.n_samples,
       strategy: req.body.strategy,
+      dataset: { id: req.body.datasetId } as Dataset,
       user: { id: req.body.userId } as User,
     });
     console.log(`[✔] Job created:`, newJob);
@@ -175,9 +189,12 @@ export const trainActiveLearningResult = asyncHandler(
 
     // Update job with the result
     await updateJob(req.body.jobId, {
-      status: TrainingJobStatus.COMPLETED,
       completed_at: new Date(),
       result_path: req.body.result.labeled_images_path,
+      status:
+        req.body.result.status === 'error'
+          ? TrainingJobStatus.FAILED
+          : TrainingJobStatus.COMPLETED,
     });
 
     // Send event to all connected clients

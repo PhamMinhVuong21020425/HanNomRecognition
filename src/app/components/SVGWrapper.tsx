@@ -56,7 +56,7 @@ let pointsY: number[] = [];
 // Define zoom step and limits
 const ZOOM_STEP = 0.1;
 const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 8.0;
+const MAX_ZOOM = 9.0;
 const ZOOM_ANIMATION_DURATION = 150; // ms
 
 function SVGWrapper() {
@@ -386,7 +386,7 @@ function SVGWrapper() {
 
   useEffect(() => {
     if (selDrawImageIndex === -1 || imageFiles.length === 0) return;
-    const objURL = imageFiles[selDrawImageIndex].obj_url;
+    const objURL = imageFiles[selDrawImageIndex]?.obj_url;
     try {
       setLoading(true);
       getImageSizeFromUrl(objURL).then(size => {
