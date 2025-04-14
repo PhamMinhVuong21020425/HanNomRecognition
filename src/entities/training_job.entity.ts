@@ -20,11 +20,13 @@ export class TrainingJob {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => Model, model => model.trainingJobs)
+  @ManyToOne(() => Model, model => model.trainingJobs, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'model_id' })
   model: Model;
 
-  @ManyToOne(() => Dataset, dataset => dataset.trainingJobs)
+  @ManyToOne(() => Dataset, dataset => dataset.trainingJobs, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'dataset_id' })
   dataset: Dataset;
 

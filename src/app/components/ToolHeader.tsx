@@ -44,6 +44,7 @@ import {
   selectShapes,
   selectSelShapeIndex,
   selectSelDataset,
+  setSelDataset,
 } from '@/lib/redux';
 import { connectSocket } from '@/lib/socket';
 import {
@@ -80,6 +81,7 @@ function ToolHeader({ type }: { type: ProblemType }) {
 
   const files = useAppSelector(selectImagesRedux);
   const isFirstRender = useRef(true);
+  const isLoadDataRef = useRef(true);
 
   const modelDetectMenuItems = [
     {
@@ -123,6 +125,10 @@ function ToolHeader({ type }: { type: ProblemType }) {
     if (!isFirstRender.current) return;
     isFirstRender.current = false;
 
+    if (!userData) {
+      dispatch(setSelDataset(null));
+    }
+
     // Connect to socket
     const socket = connectSocket();
     socket.emit('login', userData?.id);
@@ -159,7 +165,7 @@ function ToolHeader({ type }: { type: ProblemType }) {
       openNotification(notificationData);
     });
 
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0 || selDataset) return;
 
     const msg =
       files.length > 1 ? `${files.length} images` : `${files.length} image`;
@@ -191,7 +197,8 @@ function ToolHeader({ type }: { type: ProblemType }) {
   }, []);
 
   useEffect(() => {
-    if (!selDataset) return;
+    if (!selDataset || !isLoadDataRef.current) return;
+    isLoadDataRef.current = false;
 
     axios.get(`/be/datasets/${selDataset.id}/images`).then(response => {
       const images: Image[] = response.data ?? [];
@@ -221,6 +228,12 @@ function ToolHeader({ type }: { type: ProblemType }) {
           selDataset.type === ProblemType.DETECT
             ? images.map(img => parseCoco(img.label))
             : [];
+
+        const msg =
+          imagesOfDataset.length > 1
+            ? `${imagesOfDataset.length} images`
+            : `${imagesOfDataset.length} image`;
+        message.success(`Success to load ${msg}.`);
 
         dispatch(
           setImageFiles({
