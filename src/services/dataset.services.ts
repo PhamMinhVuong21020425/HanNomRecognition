@@ -146,6 +146,7 @@ export const saveAnnotationDataset = async (
     }
   }
 
+  dataset.images = await getImagesByDatasetId(datasetId);
   dataset.updated_at = new Date();
   await datasetRepository.save(dataset);
 };

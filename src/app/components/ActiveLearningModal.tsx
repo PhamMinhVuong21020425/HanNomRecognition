@@ -4,7 +4,12 @@ import { useState } from 'react';
 import { Button, Modal, Form, Select, InputNumber, message } from 'antd';
 import { Notification } from '@/entities/notification.entity';
 import { NotificationStatus } from '@/enums/NotificationStatus';
-import { selectImageFiles, selectUser, useAppSelector } from '@/lib/redux';
+import {
+  selectImageFiles,
+  selectSelDataset,
+  selectUser,
+  useAppSelector,
+} from '@/lib/redux';
 import { fetchFileFromObjectUrl, normalizeFileName } from '@/utils/general';
 
 type ActiveLearningModalProps = {
@@ -24,6 +29,7 @@ function ActiveLearningModal({
   const [strategy, setStrategy] = useState('');
 
   const userData = useAppSelector(selectUser);
+  const selDataset = useAppSelector(selectSelDataset);
   const imageFiles = useAppSelector(selectImageFiles);
 
   const handleActiveLearningSubmit = async () => {
@@ -32,6 +38,11 @@ function ActiveLearningModal({
 
     if (!userData) {
       message.error('Login to start active learning');
+      return;
+    }
+
+    if (!selDataset) {
+      message.error('No dataset selected');
       return;
     }
 
@@ -66,6 +77,7 @@ function ActiveLearningModal({
     formData.append('n_samples', numberOfSamples.toString());
     formData.append('strategy', strategy);
     formData.append('userId', userData.id);
+    formData.append('datasetId', selDataset.id);
 
     const response = await axios.post('/be/train/active-learning', formData, {
       headers: {

@@ -92,6 +92,7 @@ function ImportImage() {
   useEffect(() => {
     if (!userData) return;
     dispatch(getDatasetsOfUserAsync(userData.id));
+    dispatch(setSelDataset(null));
   }, []);
 
   const handleClick = () => {

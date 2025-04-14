@@ -15,6 +15,7 @@ import { Notification } from '@/entities/notification.entity';
 import { NotificationStatus } from '@/enums/NotificationStatus';
 import {
   selectImageFiles,
+  selectSelDataset,
   selectShapes,
   selectUser,
   useAppSelector,
@@ -49,6 +50,7 @@ function TrainingModal({
   const [description, setDescription] = useState('');
 
   const userData = useAppSelector(selectUser);
+  const selDataset = useAppSelector(selectSelDataset);
   const imageFiles = useAppSelector(selectImageFiles);
   const shapes = useAppSelector(selectShapes);
 
@@ -58,6 +60,11 @@ function TrainingModal({
 
     if (!userData) {
       message.error('Login to start training');
+      return;
+    }
+
+    if (!selDataset) {
+      message.error('No dataset selected');
       return;
     }
 
@@ -118,6 +125,7 @@ function TrainingModal({
         formData.append('epochs', epochs.toString());
         formData.append('batchSize', batchSize.toString());
         formData.append('userId', userData.id);
+        formData.append('datasetId', selDataset.id);
 
         const response = await axios.post('/be/train/detect', formData, {
           headers: {
@@ -197,6 +205,7 @@ function TrainingModal({
         clsFormData.append('epochs', epochs.toString());
         clsFormData.append('batchSize', batchSize.toString());
         clsFormData.append('userId', userData.id);
+        clsFormData.append('datasetId', selDataset.id);
 
         const clsResponse = await axios.post(
           '/be/train/classify',
