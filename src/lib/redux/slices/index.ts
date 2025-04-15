@@ -5,3 +5,4 @@ export * from './eventSlice';
 export * from './annotationSlice';
 export * from './filesSlice';
 export * from './datasetSlice';
+export * from './modelSlice';

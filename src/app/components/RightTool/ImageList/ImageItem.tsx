@@ -47,7 +47,6 @@ function ImageItem(props: ImageItemProps) {
   };
 
   const onItemClick = () => {
-    dispatch(setSelShapeIndex({ selShapeIndex: -1 }));
     dispatch(setSelDrawImageIndex({ selDrawImageIndex: fileIndex }));
   };
 
