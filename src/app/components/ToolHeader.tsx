@@ -45,6 +45,12 @@ import {
   selectSelShapeIndex,
   selectSelDataset,
   setSelDataset,
+  selectAllModels,
+  selectSelDetectModel,
+  selectSelClassifyModel,
+  getAllModelsAsync,
+  setSelDetectModel,
+  setSelClassifyModel,
 } from '@/lib/redux';
 import { connectSocket } from '@/lib/socket';
 import {
@@ -60,6 +66,12 @@ import TrainingModal from './TrainingModal';
 import ActiveLearningModal from './ActiveLearningModal';
 import { ImageType } from '@/types/ImageType';
 import { Image } from '@/entities/image.entity';
+
+type MenuItemType = {
+  key: string;
+  label: string;
+  username?: string;
+};
 
 function ToolHeader({ type }: { type: ProblemType }) {
   const router = useRouter();
@@ -83,43 +95,71 @@ function ToolHeader({ type }: { type: ProblemType }) {
   const isFirstRender = useRef(true);
   const isLoadDataRef = useRef(true);
 
-  const modelDetectMenuItems = [
+  const allModels = useAppSelector(selectAllModels);
+  const selDetectModel = useAppSelector(selectSelDetectModel);
+  const selClassifyModel = useAppSelector(selectSelClassifyModel);
+
+  const [detectMenuItems, setDetectMenuItems] = useState<MenuItemType[]>([
     {
-      key: '1',
+      key: 'default',
       label: 'Detection Model',
     },
-    {
-      key: '2',
-      label: 'Custom Model 1',
-    },
-    {
-      key: '3',
-      label: 'Custom Model 2',
-    },
-  ];
+  ]);
 
-  const modelClassifyMenuItems = [
+  const [classifyMenuItems, setClassifyMenuItems] = useState<MenuItemType[]>([
     {
-      key: '1',
+      key: 'default',
       label: 'Classification Model',
     },
-    {
-      key: '2',
-      label: 'Custom Model 1',
-    },
-    {
-      key: '3',
-      label: 'Custom Model 2',
-    },
-  ];
+  ]);
 
   const [selectedModelDetect, setSelectedModelDetect] = useState(
-    modelDetectMenuItems[0]
+    detectMenuItems[0]
   );
 
   const [selectedModelClassify, setSelectedModelClassify] = useState(
-    modelClassifyMenuItems[0]
+    classifyMenuItems[0]
   );
+
+  useEffect(() => {
+    if (allModels.length === 0) return;
+    const detectModels = allModels.filter(
+      model => model.type === ProblemType.DETECT
+    );
+
+    const classifyModels = allModels.filter(
+      model => model.type === ProblemType.CLASSIFY
+    );
+
+    const selDetectIdx = detectModels.findIndex(
+      model => model.id === selDetectModel?.id
+    );
+
+    const selClassifyIdx = classifyModels.findIndex(
+      model => model.id === selClassifyModel?.id
+    );
+
+    const detectMenuItems = detectModels.map(model => ({
+      key: model.id,
+      label: model.name,
+      username: model.user.name,
+    }));
+
+    const classifyMenuItems = classifyModels.map(model => ({
+      key: model.id,
+      label: model.name,
+      username: model.user.name,
+    }));
+
+    setDetectMenuItems(prev => [prev[0], ...detectMenuItems]);
+    setClassifyMenuItems(prev => [prev[0], ...classifyMenuItems]);
+
+    if (selDetectIdx !== -1)
+      setSelectedModelDetect(detectMenuItems[selDetectIdx]);
+
+    if (selClassifyIdx !== -1)
+      setSelectedModelClassify(classifyMenuItems[selClassifyIdx]);
+  }, [allModels]);
 
   useEffect(() => {
     if (!isFirstRender.current) return;
@@ -127,6 +167,10 @@ function ToolHeader({ type }: { type: ProblemType }) {
 
     if (!userData) {
       dispatch(setSelDataset(null));
+    }
+
+    if (allModels.length === 0 && userData) {
+      dispatch(getAllModelsAsync(userData.id));
     }
 
     // Connect to socket
@@ -274,16 +318,30 @@ function ToolHeader({ type }: { type: ProblemType }) {
   };
 
   const handleMenuDetectClick: MenuProps['onClick'] = e => {
-    const selected = modelDetectMenuItems.find(item => item.key === e.key);
+    const selected = detectMenuItems.find(item => item.key === e.key);
     if (selected) {
       setSelectedModelDetect(selected);
+    }
+
+    const selectedModel = allModels.find(model => model.id === e.key);
+    if (selectedModel) {
+      dispatch(setSelDetectModel(selectedModel));
+    } else {
+      dispatch(setSelDetectModel(null));
     }
   };
 
   const handleMenuClassifyClick: MenuProps['onClick'] = e => {
-    const selected = modelClassifyMenuItems.find(item => item.key === e.key);
+    const selected = classifyMenuItems.find(item => item.key === e.key);
     if (selected) {
       setSelectedModelClassify(selected);
+    }
+
+    const selectedModel = allModels.find(model => model.id === e.key);
+    if (selectedModel) {
+      dispatch(setSelClassifyModel(selectedModel));
+    } else {
+      dispatch(setSelClassifyModel(null));
     }
   };
 
@@ -322,7 +380,7 @@ function ToolHeader({ type }: { type: ProblemType }) {
       userId: userData.id,
     });
 
-    if (response.data === true) {
+    if (response.data.success === true) {
       setNotifications([]);
     }
   };
@@ -502,8 +560,18 @@ function ToolHeader({ type }: { type: ProblemType }) {
         {type == ProblemType.DETECT ? (
           <Dropdown
             menu={{
-              items: modelDetectMenuItems.map(item => ({
+              items: detectMenuItems.map(item => ({
                 ...item,
+                label: (
+                  <span>
+                    {item.label}
+                    {item.username && (
+                      <span className="text-xs text-gray-500 ml-1">
+                        ({item.username})
+                      </span>
+                    )}
+                  </span>
+                ),
                 style:
                   item.key === selectedModelDetect.key
                     ? { backgroundColor: '#dbeafe' }
@@ -526,8 +594,18 @@ function ToolHeader({ type }: { type: ProblemType }) {
         {/* Model Classify Selector Dropdown */}
         <Dropdown
           menu={{
-            items: modelClassifyMenuItems.map(item => ({
+            items: classifyMenuItems.map(item => ({
               ...item,
+              label: (
+                <span>
+                  {item.label}
+                  {item.username && (
+                    <span className="text-xs text-gray-500 ml-1">
+                      ({item.username})
+                    </span>
+                  )}
+                </span>
+              ),
               style:
                 item.key === selectedModelClassify.key
                   ? { backgroundColor: '#dbeafe' }

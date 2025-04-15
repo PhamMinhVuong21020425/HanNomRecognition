@@ -22,7 +22,7 @@ export const createNotificationPost = asyncHandler(
 
 export const deleteNotificationsOfUserPost = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const result = await deleteNotificationsByUserId(req.body.userId);
-    res.json(result);
+    const success = await deleteNotificationsByUserId(req.body.userId);
+    res.json({ success });
   }
 );

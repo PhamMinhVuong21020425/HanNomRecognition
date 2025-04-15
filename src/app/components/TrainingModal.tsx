@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   Modal,
@@ -14,10 +14,13 @@ import {
 import { Notification } from '@/entities/notification.entity';
 import { NotificationStatus } from '@/enums/NotificationStatus';
 import {
+  getModelsOfUserAsync,
   selectImageFiles,
   selectSelDataset,
   selectShapes,
   selectUser,
+  selectUserModels,
+  useAppDispatch,
   useAppSelector,
 } from '@/lib/redux';
 import {
@@ -28,6 +31,7 @@ import {
 } from '@/utils/general';
 import axios from '@/lib/axios';
 import { ProblemType } from '@/enums/ProblemType';
+import { Model } from '@/entities/model.entity';
 
 type TrainingModalProps = {
   type: ProblemType;
@@ -46,13 +50,42 @@ function TrainingModal({
   const [modelName, setModelName] = useState('');
   const [epochs, setEpochs] = useState(10);
   const [batchSize, setBatchSize] = useState(32);
-  const [pretrainedModel, setPretrainedModel] = useState('default');
   const [description, setDescription] = useState('');
 
+  const dispatch = useAppDispatch();
   const userData = useAppSelector(selectUser);
   const selDataset = useAppSelector(selectSelDataset);
   const imageFiles = useAppSelector(selectImageFiles);
   const shapes = useAppSelector(selectShapes);
+
+  const userModels = useAppSelector(selectUserModels).filter(
+    model => model.type === type
+  );
+
+  const defaultModel = {
+    id: 'default',
+    name:
+      type === ProblemType.DETECT ? 'Detection Model' : 'Classification Model',
+    description: '',
+    path: '',
+    num_classes: 2139,
+  } as Model;
+
+  const [pretrainedModel, setPretrainedModel] = useState<Model>(defaultModel);
+
+  useEffect(() => {
+    if (!userData) return;
+    dispatch(getModelsOfUserAsync(userData.id));
+  }, []);
+
+  const handleSelectModel = (value: string) => {
+    const selectedModel = userModels.find(model => model.id === value);
+    if (selectedModel) {
+      setPretrainedModel(selectedModel);
+    } else {
+      setPretrainedModel(defaultModel);
+    }
+  };
 
   const handleTrainSubmit = async () => {
     setVisible(false);
@@ -121,7 +154,7 @@ function TrainingModal({
         formData.append('datasetName', datasetName);
         formData.append('modelName', modelName);
         formData.append('description', description);
-        formData.append('pretrainedModel', pretrainedModel);
+        formData.append('pretrainedModelPath', pretrainedModel.path);
         formData.append('epochs', epochs.toString());
         formData.append('batchSize', batchSize.toString());
         formData.append('userId', userData.id);
@@ -201,7 +234,11 @@ function TrainingModal({
         clsFormData.append('datasetName', clsDatasetName);
         clsFormData.append('modelName', modelName);
         clsFormData.append('description', description);
-        clsFormData.append('pretrainedModel', pretrainedModel);
+        clsFormData.append('pretrainedModelPath', pretrainedModel.path);
+        clsFormData.append(
+          'num_classes',
+          pretrainedModel.num_classes.toString()
+        );
         clsFormData.append('epochs', epochs.toString());
         clsFormData.append('batchSize', batchSize.toString());
         clsFormData.append('userId', userData.id);
@@ -249,7 +286,7 @@ function TrainingModal({
         initialValues={{
           epochs: 10,
           batchSize: 32,
-          pretrainedModel: 'default',
+          pretrainedModel: defaultModel.id,
         }}
       >
         <Form.Item
@@ -304,16 +341,20 @@ function TrainingModal({
         </Row>
         <Form.Item name="pretrainedModel" label="Pre-trained Model">
           <Select
-            value={pretrainedModel}
-            onChange={value => setPretrainedModel(value)}
+            value={pretrainedModel.id}
+            onChange={value => handleSelectModel(value)}
             placeholder="Select a pre-trained model"
             style={{ width: '100%' }}
           >
-            <Select.Option value="default">Default Model</Select.Option>
-            <Select.Option value="yolov5">YOLOv5</Select.Option>
-            <Select.Option value="resnet50">ResNet-50</Select.Option>
-            <Select.Option value="mobilenet">MobileNet</Select.Option>
-            <Select.Option value="bert">BERT</Select.Option>
+            <Select.Option value={defaultModel.id}>
+              {defaultModel.name}
+              <span className="text-xs text-gray-500 ml-1">(default)</span>
+            </Select.Option>
+            {userModels.map(model => (
+              <Select.Option key={model.id} value={model.id}>
+                {model.name}
+              </Select.Option>
+            ))}
           </Select>
         </Form.Item>
         <Form.Item name="description" label="Description">

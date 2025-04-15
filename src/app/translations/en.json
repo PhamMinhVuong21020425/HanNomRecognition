@@ -91,7 +91,7 @@
   "forgot-pass.error": "This email is not registered",
   "forgot-pass.back": "Back to login",
 
-  "import.choose1": "Choose models or",
+  "import.choose1": "Choose the inference model or",
   "import.choose2": "Create your own model",
   "import.discover": "to discover more models",
   "import.upload": "+ Upload images",

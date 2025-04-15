@@ -35,6 +35,10 @@ import {
   selectAllDatasets,
   getDatasetsOfUserAsync,
   setSelDataset,
+  selectAllModels,
+  getAllModelsAsync,
+  setSelDetectModel,
+  setSelClassifyModel,
 } from '@/lib/redux';
 import type { ImageType } from '@/types/ImageType';
 import { ProblemType } from '@/enums/ProblemType';
@@ -42,6 +46,7 @@ import { Dataset } from '@/entities/dataset.entity';
 import { getObjectUrlFromPath } from '@/utils/general';
 import { encodeUTF8, decodeUTF8 } from '@/utils/utf8';
 import { message } from 'antd';
+import { Model } from '@/entities/model.entity';
 
 interface DatasetForm {
   name: string;
@@ -55,20 +60,11 @@ function ImportImage() {
   const dispatch = useAppDispatch();
   const userData = useAppSelector(selectUser);
   const recentHistory = useAppSelector(selectAllDatasets);
+  const allModels = useAppSelector(selectAllModels);
   const locale = useAppSelector(selectLanguage);
   const intl = getIntl(locale);
   const createModelRef = useRef<HTMLDivElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const [listModel, setListModel] = useState([
-    'Default Model',
-    'YOLO Model',
-    'RetinaNet',
-    'Faster R-CNN',
-    'SSD Model',
-  ]);
-
-  const [selectedModel, setSelectedModel] = useState('Default Model');
   const [isLoading, setIsLoading] = useState(false);
 
   const [images, setImages] = useState<File[]>([]);
@@ -83,6 +79,22 @@ function ImportImage() {
     type: ProblemType.DETECT,
   });
 
+  const defaultDetectModel = {
+    id: 'default',
+    name: 'Detection Model',
+    description: '',
+    type: ProblemType.DETECT,
+  } as Model;
+
+  const defaultClassifyModel = {
+    id: 'default',
+    name: 'Classification Model',
+    description: '',
+    type: ProblemType.CLASSIFY,
+  } as Model;
+
+  const [selectedModel, setSelectedModel] = useState<Model>(defaultDetectModel);
+  const [listModel, setListModel] = useState<Model[]>([]);
   const [activeTab, setActiveTab] = useState('details');
 
   useEffect(() => {
@@ -92,8 +104,16 @@ function ImportImage() {
   useEffect(() => {
     if (!userData) return;
     dispatch(getDatasetsOfUserAsync(userData.id));
+    dispatch(getAllModelsAsync(userData.id));
     dispatch(setSelDataset(null));
   }, []);
+
+  useEffect(() => {
+    setListModel([
+      defaultDetectModel,
+      ...allModels.filter(model => model.type === ProblemType.DETECT),
+    ]);
+  }, [allModels]);
 
   const handleClick = () => {
     if (createModelRef?.current) {
@@ -101,7 +121,7 @@ function ImportImage() {
     }
   };
 
-  const handleModelSelect = (model: string) => {
+  const handleModelSelect = (model: Model) => {
     setSelectedModel(model);
     setIsDropdownOpen(false);
   };
@@ -199,12 +219,20 @@ function ImportImage() {
 
   const handleTypeSelect = (type: ProblemType) => {
     setDatasetForm(prev => ({ ...prev, type }));
-  };
-
-  const handleModelSelectLocal = (model: string) => {
-    setSelectedModel(model);
-    handleModelSelect(model);
-    setIsDropdownOpen(false);
+    setSelectedModel(
+      type === ProblemType.DETECT ? defaultDetectModel : defaultClassifyModel
+    );
+    setListModel(
+      type === ProblemType.DETECT
+        ? [
+            defaultDetectModel,
+            ...allModels.filter(model => model.type === type),
+          ]
+        : [
+            defaultClassifyModel,
+            ...allModels.filter(model => model.type === type),
+          ]
+    );
   };
 
   const handleCreateDataset = async () => {
@@ -222,12 +250,19 @@ function ImportImage() {
       setIsLoading(true);
       dispatch(setImagesRedux(previews));
 
+      if (selectedModel.id !== 'default') {
+        if (datasetForm.type === ProblemType.DETECT) {
+          dispatch(setSelDetectModel(selectedModel));
+        } else {
+          dispatch(setSelClassifyModel(selectedModel));
+        }
+      }
+
       const formData = new FormData();
       formData.append('name', datasetForm.name);
       formData.append('description', datasetForm.description);
       formData.append('isPublic', String(datasetForm.isPublic));
       formData.append('type', datasetForm.type);
-      formData.append('model', selectedModel);
       formData.append('userId', userData!.id);
       images.forEach(img => formData.append('imgs', img));
 
@@ -651,7 +686,7 @@ function ImportImage() {
                             className="selectHeader"
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                           >
-                            <span>{selectedModel}</span>
+                            <span>{selectedModel.name}</span>
                             <FontAwesomeIcon
                               icon={faChevronDown}
                               className={`selectIcon ${isDropdownOpen ? 'open' : ''}`}
@@ -659,15 +694,22 @@ function ImportImage() {
                           </div>
                           {isDropdownOpen && (
                             <div className="selectOptions">
-                              {listModel.map((model, index) => (
+                              {listModel.map(model => (
                                 <div
-                                  key={index}
+                                  key={model.id}
                                   className={`selectOption ${
-                                    selectedModel === model ? 'selected' : ''
+                                    selectedModel.id === model.id
+                                      ? 'selected'
+                                      : ''
                                   }`}
-                                  onClick={() => handleModelSelectLocal(model)}
+                                  onClick={() => handleModelSelect(model)}
                                 >
-                                  {model}
+                                  {model.name}
+                                  {model.user && (
+                                    <span className="text-gray-600 text-xs ml-1">
+                                      ({model.user.name})
+                                    </span>
+                                  )}
                                 </div>
                               ))}
                             </div>

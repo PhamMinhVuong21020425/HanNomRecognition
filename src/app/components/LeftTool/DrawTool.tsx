@@ -39,6 +39,8 @@ import {
   selectSelShapeIndex,
   selectSelShapeType,
   selectDrawStatus,
+  selectSelDetectModel,
+  selectSelClassifyModel,
 } from '@/lib/redux';
 import { DRAW_STATUS_TYPES, SHAPE_TYPES, ANNOTATION_TYPES } from '@/constants';
 import {
@@ -75,6 +77,9 @@ function DrawTool() {
   const selShapeIndex = useAppSelector(selectSelShapeIndex);
   const selShapeType = useAppSelector(selectSelShapeType);
   const drawStatus = useAppSelector(selectDrawStatus);
+
+  const selDetectModel = useAppSelector(selectSelDetectModel);
+  const selClassifyModel = useAppSelector(selectSelClassifyModel);
 
   // Track which tool is active
   const [activeTool, setActiveTool] = useState<ActiveToolType>(
@@ -183,6 +188,15 @@ function DrawTool() {
       );
       formData.append('files', image);
 
+      if (selDetectModel) {
+        formData.append('modelDetectPath', selDetectModel.path);
+      }
+
+      if (selClassifyModel) {
+        formData.append('modelClassifyPath', selClassifyModel.path);
+        formData.append('num_classes', selClassifyModel.num_classes.toString());
+      }
+
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_FLASK_API}/api/detect`,
         formData,
@@ -191,7 +205,7 @@ function DrawTool() {
         }
       );
 
-      dispatch(setDetections([...listDetections, ...response.data]));
+      dispatch(setDetections(response.data));
       setLoading(false);
       message.success('Auto annotation completed');
     } catch (error) {
