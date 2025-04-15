@@ -1,5 +1,6 @@
 import { AppDataSource } from '../config/data-source';
 import { Model } from '../entities/model.entity';
+import { ModelStatus } from '../enums/ModelStatus';
 
 const modelRepository = AppDataSource.getRepository(Model);
 
@@ -8,16 +9,22 @@ export const getModelById = async (id: string) => {
   return model;
 };
 
-export const getAllModels = async () => {
+export const getAllModels = async (userId: string) => {
   const models = await modelRepository.find({
-    where: { is_public: true },
+    where: [
+      { is_public: true, status: ModelStatus.COMPLETED },
+      { user: { id: userId }, status: ModelStatus.COMPLETED },
+    ],
+    order: { updated_at: 'DESC' },
+    relations: { user: true },
   });
   return models;
 };
 
 export const getModelsByUserId = async (userId: string) => {
   const models = await modelRepository.find({
-    where: { user: { id: userId } },
+    where: { user: { id: userId }, status: ModelStatus.COMPLETED },
+    order: { updated_at: 'DESC' },
   });
   return models;
 };

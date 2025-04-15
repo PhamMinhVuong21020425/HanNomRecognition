@@ -10,6 +10,7 @@ import {
   annotationReducer,
   filesReducer,
   datasetReducer,
+  modelReducer,
 } from './slices';
 
 export const rootReducer = combineReducers({
@@ -20,4 +21,5 @@ export const rootReducer = combineReducers({
   annotation: annotationReducer,
   files: filesReducer,
   dataset: datasetReducer,
+  model: modelReducer,
 });

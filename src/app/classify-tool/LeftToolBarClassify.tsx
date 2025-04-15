@@ -29,6 +29,7 @@ import {
   selectImagesInfo,
   selectSelShapeType,
   setLabelImageFile,
+  selectSelClassifyModel,
 } from '@/lib/redux';
 import { SHAPE_TYPES } from '@/constants';
 import { fetchFileFromObjectUrl } from '@/utils/general';
@@ -78,6 +79,7 @@ const LeftToolbarClassify = () => {
     shallowEqual
   );
   const selShapeType = useAppSelector(selectSelShapeType);
+  const selClassifyModel = useAppSelector(selectSelClassifyModel);
 
   // Track which tool is active
   const [activeTool, setActiveTool] = useState<ActiveToolType>(
@@ -142,6 +144,10 @@ const LeftToolbarClassify = () => {
         imageFiles[selDrawImageIndex].name
       );
       formData.append('img', image);
+      if (selClassifyModel) {
+        formData.append('modelPath', selClassifyModel.path);
+        formData.append('num_classes', selClassifyModel.num_classes.toString());
+      }
 
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_FLASK_API}/api/classify`,

@@ -92,7 +92,7 @@ export const saveAnnotationDataToDatabase = asyncHandler(
       console.error(
         `Error saving annotation data: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
-      res.status(500).json({ error: 'Failed to save annotation data' });
+      res.status(200).json({ error: 'Failed to save annotation data' });
     }
   }
 );

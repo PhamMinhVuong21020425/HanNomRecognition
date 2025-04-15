@@ -1,16 +1,21 @@
 import JSZip from 'jszip';
 import axios from '@/lib/axios';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Modal, Form, Select, InputNumber, message } from 'antd';
 import { Notification } from '@/entities/notification.entity';
 import { NotificationStatus } from '@/enums/NotificationStatus';
 import {
+  getModelsOfUserAsync,
   selectImageFiles,
   selectSelDataset,
   selectUser,
+  selectUserModels,
+  useAppDispatch,
   useAppSelector,
 } from '@/lib/redux';
 import { fetchFileFromObjectUrl, normalizeFileName } from '@/utils/general';
+import { Model } from '@/entities/model.entity';
+import { ProblemType } from '@/enums/ProblemType';
 
 type ActiveLearningModalProps = {
   visible: boolean;
@@ -25,12 +30,39 @@ function ActiveLearningModal({
 }: ActiveLearningModalProps) {
   const [form] = Form.useForm();
   const [numberOfSamples, setNumberOfSamples] = useState<number>(0);
-  const [modelInference, setModelInference] = useState('');
   const [strategy, setStrategy] = useState('');
 
+  const dispatch = useAppDispatch();
   const userData = useAppSelector(selectUser);
   const selDataset = useAppSelector(selectSelDataset);
   const imageFiles = useAppSelector(selectImageFiles);
+
+  const userModels = useAppSelector(selectUserModels).filter(
+    model => model.type === ProblemType.CLASSIFY
+  );
+
+  const defaultClsModel = {
+    id: 'default',
+    name: 'Classification Model',
+    description: '',
+    path: '',
+  } as Model;
+
+  const [modelInference, setModelInference] = useState<Model>(defaultClsModel);
+
+  useEffect(() => {
+    if (!userData) return;
+    dispatch(getModelsOfUserAsync(userData.id));
+  }, []);
+
+  const handleSelectModel = (value: string) => {
+    const selectedModel = userModels.find(model => model.id === value);
+    if (selectedModel) {
+      setModelInference(selectedModel);
+    } else {
+      setModelInference(defaultClsModel);
+    }
+  };
 
   const handleActiveLearningSubmit = async () => {
     setVisible(false);
@@ -60,7 +92,7 @@ function ActiveLearningModal({
     // Zip the content to send to the server
     const zip = new JSZip();
     const poolName =
-      modelInference.split(' ').join('_').toLowerCase() + '_pool_data';
+      modelInference.name.split(' ').join('_').toLowerCase() + '_pool_data';
     const zipName = `${poolName}.zip`;
     const rootFolder = zip.folder(poolName);
 
@@ -73,11 +105,16 @@ function ActiveLearningModal({
     const formData = new FormData();
     formData.append('pool', zipFile);
     formData.append('poolName', poolName);
-    formData.append('modelInference', modelInference);
     formData.append('n_samples', numberOfSamples.toString());
     formData.append('strategy', strategy);
     formData.append('userId', userData.id);
     formData.append('datasetId', selDataset.id);
+
+    if (modelInference.id !== 'default') {
+      formData.append('modelId', modelInference.id);
+      formData.append('modelPath', modelInference.path);
+      formData.append('num_classes', modelInference.num_classes.toString());
+    }
 
     const response = await axios.post('/be/train/active-learning', formData, {
       headers: {
@@ -97,7 +134,7 @@ function ActiveLearningModal({
 
     await openNotification({
       message: 'Active Learning Started',
-      description: `Active learning started with ${modelInference} model.`,
+      description: `Active learning started with ${modelInference.name} model.`,
       status: NotificationStatus.INFO,
     });
   };
@@ -136,13 +173,19 @@ function ActiveLearningModal({
         >
           <Select
             placeholder="Select Model"
-            value={modelInference}
-            onChange={value => setModelInference(value)}
+            value={modelInference.id}
+            onChange={value => handleSelectModel(value)}
             style={{ width: '100%' }}
           >
-            <Select.Option value="default">Default Model</Select.Option>
-            <Select.Option value="custom1">Custom Model 1</Select.Option>
-            <Select.Option value="custom2">Custom Model 2</Select.Option>
+            <Select.Option value={defaultClsModel.id}>
+              {defaultClsModel.name}
+              <span className="text-xs text-gray-500 ml-1">(default)</span>
+            </Select.Option>
+            {userModels.map(model => (
+              <Select.Option key={model.id} value={model.id}>
+                {model.name}
+              </Select.Option>
+            ))}
           </Select>
         </Form.Item>
         <Form.Item

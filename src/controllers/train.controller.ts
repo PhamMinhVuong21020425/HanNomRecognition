@@ -9,6 +9,7 @@ import { ModelStatus } from '../enums/ModelStatus';
 import { User } from '../entities/user.entity';
 import { Dataset } from '../entities/dataset.entity';
 import { TrainingJobStatus } from '../enums/TrainingJobStatus';
+import { Model } from '@/entities/model.entity';
 
 export const trainModelDetect = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -160,9 +161,12 @@ export const trainActiveLearning = asyncHandler(
       return;
     }
 
+    const modelId = req.body.modelId;
+
     const newJob = await createJob({
       n_samples: req.body.n_samples,
       strategy: req.body.strategy,
+      model: modelId ? ({ id: modelId } as Model) : undefined,
       dataset: { id: req.body.datasetId } as Dataset,
       user: { id: req.body.userId } as User,
     });
