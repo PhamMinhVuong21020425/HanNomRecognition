@@ -5,6 +5,6 @@ const router: Router = Router();
 
 router.post('/delete', jobController.deleteJobPost);
 
-router.get('/', jobController.jobsOfUserGet);
+router.get('/:userId', jobController.jobsOfUserGet);
 
 export default router;

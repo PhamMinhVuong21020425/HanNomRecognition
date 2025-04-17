@@ -63,7 +63,7 @@ export const normalizeFileName = (fileName: string) => {
   return fileName
     .toLowerCase()
     .replace(/\s+/g, '_') // Replace spaces with underscores
-    .replace(/[^a-z0-9-_\.]/g, '') // Remove non-alphanumeric characters
+    .replace(/[^a-z0-9-_\.\$]/g, '') // Remove non-alphanumeric characters
     .replace(/\.+$/, ''); // Remove trailing dots
 };
 

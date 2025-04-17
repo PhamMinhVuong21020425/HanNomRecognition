@@ -11,6 +11,7 @@ export const getJobById = async (id: string) => {
 export const getJobsByUserId = async (userId: string) => {
   const jobs = await jobRepository.find({
     where: { user: { id: userId } },
+    relations: { model: true },
   });
   return jobs;
 };
