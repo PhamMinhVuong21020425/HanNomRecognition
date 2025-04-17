@@ -13,40 +13,33 @@ import {
   setIsOpenDescript,
   selectUser,
   selectLanguage,
+  selectAllModels,
+  getAllModelsAsync,
 } from '@/lib/redux';
 import { getIntl } from '@/utils/i18n';
-
-import { ListModel, RequestModelList } from '../request/mock';
 
 let PageSize = 10;
 
 function YourModel() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [listModel, setListModel] = useState<RequestModelList>({ Data: [] });
   const [isLoad, setIsLoad] = useState(false);
   const [description, setDescription] = useState('');
   const dispatch = useAppDispatch();
 
   const userData = useAppSelector(selectUser);
-  let userId = '';
-  if (userData) {
-    userId = userData.id;
-  }
+  const allModels = useAppSelector(selectAllModels);
 
   const locale = useAppSelector(selectLanguage);
   const intl = getIntl(locale);
 
   useEffect(() => {
     document.title = intl.formatMessage({ id: 'metadata.yourmodel.title' });
-    if (userData) {
-      setIsLoad(true);
-      let data = ListModel;
-      setListModel(data);
-      setTimeout(() => {
-        setIsLoad(false);
-      }, 1000);
-    }
   }, [locale]);
+
+  useEffect(() => {
+    if (!userData) return;
+    dispatch(getAllModelsAsync(userData.id));
+  }, []);
 
   const handleShowDescription = (description: string) => {
     setDescription(description);
@@ -54,12 +47,12 @@ function YourModel() {
   };
 
   const currentTableData = useMemo(() => {
-    if (listModel.Data === null) return [];
+    if (allModels === null) return [];
     if (isLoad) return [];
     const firstPageIndex = (currentPage - 1) * PageSize;
     const lastPageIndex = firstPageIndex + PageSize;
-    return listModel.Data.slice(firstPageIndex, lastPageIndex);
-  }, [currentPage, isLoad]);
+    return allModels.slice(firstPageIndex, lastPageIndex);
+  }, [currentPage, isLoad, allModels]);
 
   return (
     <div>
@@ -72,7 +65,7 @@ function YourModel() {
       <div className="yourmodel-container">
         <div className="yourmodel-content">
           <div className="yourmodel-title">Mô hình của bạn</div>
-          {userData && listModel.Data !== null ? (
+          {userData && allModels ? (
             <div className="yourmodel-table">
               <div className="section">
                 <div className="filter">
@@ -85,10 +78,8 @@ function YourModel() {
                       />
                     </div>
                     <div className="col1">
-                      <select className="form-select">
-                        <option value="0" selected>
-                          Trạng thái
-                        </option>
+                      <select className="form-select" defaultValue={0}>
+                        <option value="0">Trạng thái</option>
                         <option value="1">Chờ xử lý</option>
                         <option value="2">Đã duyệt</option>
                         <option value="3">Bị từ chối</option>
@@ -115,25 +106,27 @@ function YourModel() {
                     <div className="table-body">
                       {currentTableData.map((item, index) => {
                         return (
-                          <div className="body-row">
+                          <div key={item.id} className="body-row">
                             <div className="body-row-data">
                               <span>{index + 1}</span>
                             </div>
                             <div className="body-row-data1">
-                              <span>{item.Date}</span>
+                              <span>
+                                {new Date(item.created_at).toLocaleDateString()}
+                              </span>
                             </div>
 
                             <div className="body-row-data1">
-                              <span>{item.Name}</span>
+                              <span>{item.name}</span>
                             </div>
 
                             <div className="body-row-data1">
-                              <span>{item.Status}</span>
+                              <span>{item.status}</span>
                             </div>
                             <div
                               className="body-button"
                               onClick={() =>
-                                handleShowDescription(item.Description)
+                                handleShowDescription(item.description)
                               }
                             >
                               <a className="infor-link" role="button">
@@ -149,9 +142,7 @@ function YourModel() {
                       <Pagination
                         className="pagination-bar"
                         currentPage={currentPage}
-                        totalCount={
-                          listModel.Data !== null ? listModel.Data.length : 0
-                        }
+                        totalCount={allModels ? allModels.length : 0}
                         pageSize={PageSize}
                         onPageChange={page => setCurrentPage(page)}
                       />

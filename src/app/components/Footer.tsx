@@ -7,8 +7,8 @@ function Footer() {
         <div className="footer-logo">
           <img
             className="image-uet"
-            src="https://www.fit.uet.vnu.edu.vn/wp-content/themes/fit2019/images/fit-logo.svg"
-            alt=""
+            src="/icons/uetfit.svg"
+            alt="logo-uet-fit"
           />
         </div>
         <div className="information">

@@ -1,5 +1,7 @@
 'use client';
 import '../scss/Request.scss';
+import axios from 'axios';
+import request from '@/lib/axios';
 import { saveAs } from 'file-saver';
 import { useEffect, useMemo, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -10,22 +12,16 @@ import Footer from '../components/Footer';
 import Loading from '../components/Loading';
 import Pagination from '../components/Pagination';
 
-import {
-  useAppSelector,
-  useAppDispatch,
-  selectUser,
-  selectLanguage,
-} from '@/lib/redux';
+import { useAppSelector, selectUser, selectLanguage } from '@/lib/redux';
 import { getIntl } from '@/utils/i18n';
-
-import { ListModel, RequestModelList } from '../request/mock';
+import { TrainingJob } from '@/entities/training_job.entity';
+import { TrainingJobStatus } from '@/enums/TrainingJobStatus';
 
 let PageSize = 20;
 function RequestPage() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [listModel, setListModel] = useState<RequestModelList>({ Data: [] });
+  const [listJob, setListJob] = useState<TrainingJob[]>([]);
   const [isLoad, setIsLoad] = useState(false);
-  const dispatch = useAppDispatch();
 
   const userData = useAppSelector(selectUser);
 
@@ -34,24 +30,81 @@ function RequestPage() {
 
   useEffect(() => {
     document.title = intl.formatMessage({ id: 'metadata.request.title' });
-    if (userData) {
-      setIsLoad(true);
-      setListModel(ListModel);
-      setTimeout(() => {
-        setIsLoad(false);
-      }, 1000);
-    }
   }, [locale]);
+
+  useEffect(() => {
+    if (!userData) return;
+    const fetchData = async () => {
+      setIsLoad(true);
+      try {
+        const response = await request.get(`/be/jobs/${userData.id}`);
+        setListJob(response.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoad(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const currentTableData = useMemo(() => {
     if (isLoad) return [];
     const firstPageIndex = (currentPage - 1) * PageSize;
     const lastPageIndex = firstPageIndex + PageSize;
-    return listModel.Data.slice(firstPageIndex, lastPageIndex);
+    return listJob.slice(firstPageIndex, lastPageIndex);
   }, [currentPage, isLoad]);
 
-  const handleDownloadModel = (content: string | Blob) => {
-    saveAs(content, `application.zip`);
+  const handleDownloadModel = async (path: string) => {
+    setIsLoad(true);
+    console.log('path', path);
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_FLASK_API}/api/file/download`,
+        {
+          file_path: path,
+        },
+        {
+          withCredentials: true,
+          responseType: 'blob',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      // Extract filename from Content-Disposition header if available
+      let filename = 'downloaded-file';
+      const disposition = response.headers['content-disposition'];
+      if (disposition) {
+        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+        const matches = filenameRegex.exec(disposition);
+        if (matches && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+
+      // Fallback to extracting filename from the path if header doesn't contain it
+      if (filename === 'downloaded-file') {
+        const pathParts = path.replace(/\\/g, '/').split('/');
+        if (pathParts.length > 0) {
+          const lastPart = pathParts[pathParts.length - 1];
+          if (lastPart) filename = lastPart;
+        }
+      }
+
+      const contentType =
+        response.headers['content-type'] || 'application/octet-stream';
+      const blob = new Blob([response.data], { type: contentType });
+
+      saveAs(blob, filename);
+
+      console.log('File downloaded successfully:', filename);
+    } catch (error) {
+      console.error('Error downloading model:', error);
+    } finally {
+      setIsLoad(false);
+    }
   };
 
   const handleOnAccept = async (model_id: string) => {
@@ -79,7 +132,7 @@ function RequestPage() {
       <div className="request-container">
         <div className="request-content">
           <div className="request-title">Danh sách yêu cầu</div>
-          {userData && listModel.Data !== null ? (
+          {userData && listJob ? (
             <div className="request-table">
               <div className="section">
                 <div className="filter">
@@ -92,10 +145,8 @@ function RequestPage() {
                       />
                     </div>
                     <div className="col1">
-                      <select className="form-select">
-                        <option value="0" selected>
-                          Trạng thái
-                        </option>
+                      <select className="form-select" defaultValue={0}>
+                        <option value="0">Trạng thái</option>
                         <option value="1">Chờ xử lý</option>
                         <option value="2">Đã duyệt</option>
                         <option value="3">Bị từ chối</option>
@@ -123,24 +174,30 @@ function RequestPage() {
                     <div className="table-body">
                       {currentTableData.map((item, index) => {
                         return (
-                          <div className="body-row">
+                          <div key={item.id} className="body-row">
                             <div className="body-row-data">
                               <span>{index + 1}</span>
                             </div>
                             <div className="body-row-data1">
-                              <span>{item.Date}</span>
+                              <span>
+                                {new Date(item.created_at).toLocaleDateString()}
+                              </span>
                             </div>
 
                             <div className="body-row-data1">
-                              <span>{item.Name}</span>
+                              <span>
+                                {item.model ? item.model.name : item.strategy}
+                              </span>
                             </div>
 
                             <div className="body-row-data1">
-                              <span>{item.Status}</span>
+                              <span>{item.status}</span>
                             </div>
                             <div
                               className="body-row-data1"
-                              onClick={() => handleDownloadModel(item.Content)}
+                              onClick={() =>
+                                handleDownloadModel(item.result_path)
+                              }
                             >
                               <span>
                                 <FontAwesomeIcon
@@ -149,17 +206,17 @@ function RequestPage() {
                                 />
                               </span>
                             </div>
-                            {item.Status === 'Chờ xử lý' ? (
+                            {item.status === TrainingJobStatus.COMPLETED ? (
                               <div className="body-button">
                                 <button
                                   className="ok-button"
-                                  onClick={() => handleOnAccept(item.Model_id)}
+                                  onClick={() => handleOnAccept(item.model?.id)}
                                 >
                                   Đồng ý
                                 </button>
                                 <button
                                   className="reject-button"
-                                  onClick={() => handleOnReject(item.Model_id)}
+                                  onClick={() => handleOnReject(item.model?.id)}
                                 >
                                   Từ chối
                                 </button>
@@ -168,7 +225,7 @@ function RequestPage() {
                               <div className="body-button">
                                 <button
                                   className="reject-button"
-                                  onClick={() => handleOnDelete(item.Model_id)}
+                                  onClick={() => handleOnDelete(item.model?.id)}
                                 >
                                   Xóa yêu cầu
                                 </button>
@@ -182,7 +239,7 @@ function RequestPage() {
                       <Pagination
                         className="pagination-bar"
                         currentPage={currentPage}
-                        totalCount={listModel.Data.length}
+                        totalCount={listJob.length}
                         pageSize={PageSize}
                         onPageChange={page => setCurrentPage(page)}
                       />
