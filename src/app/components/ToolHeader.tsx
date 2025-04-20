@@ -48,9 +48,10 @@ import {
   selectAllModels,
   selectSelDetectModel,
   selectSelClassifyModel,
-  getAllModelsAsync,
   setSelDetectModel,
   setSelClassifyModel,
+  getModelsOfUserAsync,
+  getAllModelsAsync,
 } from '@/lib/redux';
 import { connectSocket } from '@/lib/socket';
 import {
@@ -207,6 +208,10 @@ function ToolHeader({ type }: { type: ProblemType }) {
         created_at: message.created_at,
       };
       openNotification(notificationData);
+
+      if (!userData) return;
+      dispatch(getAllModelsAsync(userData.id));
+      dispatch(getModelsOfUserAsync(userData.id));
     });
 
     if (!files || files.length === 0 || selDataset) return;

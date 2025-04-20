@@ -6,7 +6,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import Loading from '../components/Loading';
 import Pagination from '../components/Pagination';
-import DescriptionModal from '../components/DescriptionModal';
+import ModelDetailModal from '../components/ModelDetailModal';
 import {
   useAppDispatch,
   useAppSelector,
@@ -18,12 +18,17 @@ import {
 } from '@/lib/redux';
 import { getIntl } from '@/utils/i18n';
 
-let PageSize = 10;
+import { Model } from '@/entities/model.entity';
 
-function YourModel() {
+const PageSize = 10;
+
+const YourModel: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoad, setIsLoad] = useState(false);
-  const [description, setDescription] = useState('');
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredModels, setFilteredModels] = useState<Model[]>([]);
+
   const dispatch = useAppDispatch();
 
   const userData = useAppSelector(selectUser);
@@ -38,132 +43,200 @@ function YourModel() {
 
   useEffect(() => {
     if (!userData) return;
-    dispatch(getAllModelsAsync(userData.id));
-  }, []);
+    setIsLoad(true);
+    dispatch(getAllModelsAsync(userData.id))
+      .then(() => setIsLoad(false))
+      .catch(() => setIsLoad(false));
+  }, [dispatch, userData]);
 
-  const handleShowDescription = (description: string) => {
-    setDescription(description);
+  useEffect(() => {
+    if (!allModels) return;
+    filterModels();
+  }, [allModels, searchTerm]);
+
+  const filterModels = () => {
+    if (!allModels) return;
+
+    if (!searchTerm.trim()) {
+      setFilteredModels(allModels);
+      return;
+    }
+
+    const filtered = allModels.filter(
+      model =>
+        model.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        model.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        model.type.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    setFilteredModels(filtered);
+  };
+
+  const handleShowModelDetails = (model: Model) => {
+    setSelectedModel(model);
     dispatch(setIsOpenDescript(true));
   };
 
   const currentTableData = useMemo(() => {
-    if (allModels === null) return [];
+    if (filteredModels.length === 0) return [];
     if (isLoad) return [];
+
     const firstPageIndex = (currentPage - 1) * PageSize;
     const lastPageIndex = firstPageIndex + PageSize;
-    return allModels.slice(firstPageIndex, lastPageIndex);
-  }, [currentPage, isLoad, allModels]);
+    return filteredModels.slice(firstPageIndex, lastPageIndex);
+  }, [currentPage, isLoad, filteredModels]);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
 
   return (
-    <div>
+    <div className="model-page">
       <Header />
       {isLoad && (
-        <div className="loading-animation">
+        <div className="loading-overlay">
           <Loading />
         </div>
       )}
-      <div className="yourmodel-container">
-        <div className="yourmodel-content">
-          <div className="yourmodel-title">Mô hình của bạn</div>
+      <div className="model-container">
+        <div className="model-content">
+          <div className="model-header">
+            <h1 className="model-title">
+              {intl.formatMessage({ id: 'homeheader.yourmodel' }) ||
+                'Your Models'}
+            </h1>
+            <div className="search-container">
+              <input
+                type="text"
+                className="search-input"
+                placeholder={
+                  intl.formatMessage({ id: 'yourmodel.search' }) ||
+                  'Search models...'
+                }
+                value={searchTerm}
+                onChange={handleSearch}
+              />
+              <span className="search-icon">🔍</span>
+            </div>
+          </div>
+
           {userData && allModels ? (
-            <div className="yourmodel-table">
-              <div className="section">
-                <div className="filter">
-                  <div className="filter-form">
-                    <div className="col1">
-                      <input
-                        className="form-control"
-                        type="text"
-                        placeholder="Từ khóa"
-                      />
-                    </div>
-                    <div className="col1">
-                      <select className="form-select" defaultValue={0}>
-                        <option value="0">Trạng thái</option>
-                        <option value="1">Chờ xử lý</option>
-                        <option value="2">Đã duyệt</option>
-                        <option value="3">Bị từ chối</option>
-                      </select>
-                    </div>
-                    <div className="col1">
-                      <button className="search-button" type="submit">
-                        Tìm kiếm
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div className="table-content">
-                  <div className="top-content">
-                    <div className="table-header">
-                      <div className="row">
-                        <div className="row-data">#</div>
-                        <div className="row-data1">Ngày tạo</div>
-                        <div className="row-data1">Tên mô hình</div>
-                        <div className="row-data1">Trạng thái</div>
-                        <div className="last-column">Thông tin</div>
+            <>
+              {filteredModels.length > 0 ? (
+                <div className="model-table">
+                  <div className="table-header">
+                    <div className="header-row">
+                      <div className="col-index">#</div>
+                      <div className="col-date">
+                        {intl.formatMessage({ id: 'yourmodel.createdAt' }) ||
+                          'Created At'}
+                      </div>
+                      <div className="col-name">
+                        {intl.formatMessage({ id: 'yourmodel.modelName' }) ||
+                          'Model Name'}
+                      </div>
+                      <div className="col-type">
+                        {intl.formatMessage({ id: 'yourmodel.type' }) || 'Type'}
+                      </div>
+                      <div className="col-accuracy">
+                        {intl.formatMessage({ id: 'yourmodel.accuracy' }) ||
+                          'Accuracy'}
+                      </div>
+                      <div className="col-actions">
+                        {intl.formatMessage({ id: 'yourmodel.actions' }) ||
+                          'Actions'}
                       </div>
                     </div>
-                    <div className="table-body">
-                      {currentTableData.map((item, index) => {
-                        return (
-                          <div key={item.id} className="body-row">
-                            <div className="body-row-data">
-                              <span>{index + 1}</span>
-                            </div>
-                            <div className="body-row-data1">
-                              <span>
-                                {new Date(item.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
+                  </div>
 
-                            <div className="body-row-data1">
-                              <span>{item.name}</span>
-                            </div>
+                  <div className="table-body">
+                    {currentTableData.map((model, index) => (
+                      <div key={model.id} className="table-row">
+                        <div className="col-index">
+                          {(currentPage - 1) * PageSize + index + 1}
+                        </div>
+                        <div className="col-date">
+                          {formatDate(model.created_at)}
+                        </div>
+                        <div className="col-name" title={model.name}>
+                          {model.name}
+                        </div>
+                        <div className="col-type">
+                          <span
+                            className={`type-badge type-${model.type.toLowerCase()}`}
+                          >
+                            {model.type}
+                          </span>
+                        </div>
+                        <div className="col-accuracy">
+                          {model.accuracy
+                            ? `${(model.accuracy * 100).toFixed(2)}%`
+                            : '-'}
+                        </div>
+                        <div className="col-actions">
+                          <button
+                            className="action-button view-button"
+                            onClick={() => handleShowModelDetails(model)}
+                          >
+                            {intl.formatMessage({
+                              id: 'yourmodel.viewDetails',
+                            }) || 'View Details'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
 
-                            <div className="body-row-data1">
-                              <span>{item.status}</span>
-                            </div>
-                            <div
-                              className="body-button"
-                              onClick={() =>
-                                handleShowDescription(item.description)
-                              }
-                            >
-                              <a className="infor-link" role="button">
-                                Mô tả
-                              </a>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      <DescriptionModal description={description} />
-                    </div>
-                    <div className="pagination-container">
+                  {filteredModels.length > PageSize && (
+                    <div className="pagination-wrapper">
                       <Pagination
                         className="pagination-bar"
                         currentPage={currentPage}
-                        totalCount={allModels ? allModels.length : 0}
+                        totalCount={filteredModels.length}
                         pageSize={PageSize}
                         onPageChange={page => setCurrentPage(page)}
                       />
                     </div>
-                  </div>
+                  )}
                 </div>
-              </div>
-            </div>
+              ) : (
+                <div className="no-results">
+                  {intl.formatMessage({ id: 'noModelsFound' }) ||
+                    'No models found matching your search.'}
+                </div>
+              )}
+            </>
           ) : (
-            <div className="notuser">
-              Bạn chưa có mô hình nào!{' '}
-              <a href="/import" className="create-model">
-                Tạo mô hình
+            <div className="empty-state">
+              <div className="empty-icon">📊</div>
+              <h2>
+                {intl.formatMessage({ id: 'noModelsYet' }) ||
+                  "You don't have any models yet!"}
+              </h2>
+              <p>
+                {intl.formatMessage({ id: 'createModelPrompt' }) ||
+                  'Create your first model to get started.'}
+              </p>
+              <a href="/import" className="create-model-button">
+                {intl.formatMessage({ id: 'createModel' }) || 'Create Model'}
               </a>
             </div>
           )}
         </div>
       </div>
+      {selectedModel && <ModelDetailModal model={selectedModel} />}
       <Footer />
     </div>
   );
-}
+};
 
 export default YourModel;
