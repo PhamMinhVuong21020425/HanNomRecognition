@@ -15,9 +15,9 @@ import Pagination from '../components/Pagination';
 import { useAppSelector, selectUser, selectLanguage } from '@/lib/redux';
 import { getIntl } from '@/utils/i18n';
 import { TrainingJob } from '@/entities/training_job.entity';
-import { TrainingJobStatus } from '@/enums/TrainingJobStatus';
 
-let PageSize = 20;
+const PageSize = 10;
+
 function RequestPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [listJob, setListJob] = useState<TrainingJob[]>([]);
@@ -107,18 +107,6 @@ function RequestPage() {
     }
   };
 
-  const handleOnAccept = async (model_id: string) => {
-    setIsLoad(true);
-    setTimeout(() => {
-      setIsLoad(false);
-    }, 1000);
-  };
-  const handleOnReject = async (model_id: string) => {
-    setIsLoad(true);
-    setTimeout(() => {
-      setIsLoad(false);
-    }, 1000);
-  };
   const handleOnDelete = async (model_id: string) => {
     setIsLoad(true);
     setTimeout(() => {
@@ -164,7 +152,7 @@ function RequestPage() {
                     <div className="table-header">
                       <div className="row">
                         <div className="row-data">#</div>
-                        <div className="row-data1">Họ tên</div>
+                        <div className="row-data1">Ngày tạo</div>
                         <div className="row-data1">Tên mô hình</div>
                         <div className="row-data1">Trạng thái</div>
                         <div className="row-data1">Tải về</div>
@@ -206,31 +194,14 @@ function RequestPage() {
                                 />
                               </span>
                             </div>
-                            {item.status === TrainingJobStatus.COMPLETED ? (
-                              <div className="body-button">
-                                <button
-                                  className="ok-button"
-                                  onClick={() => handleOnAccept(item.model?.id)}
-                                >
-                                  Đồng ý
-                                </button>
-                                <button
-                                  className="reject-button"
-                                  onClick={() => handleOnReject(item.model?.id)}
-                                >
-                                  Từ chối
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="body-button">
-                                <button
-                                  className="reject-button"
-                                  onClick={() => handleOnDelete(item.model?.id)}
-                                >
-                                  Xóa yêu cầu
-                                </button>
-                              </div>
-                            )}
+                            <div className="body-button">
+                              <button
+                                className="reject-button"
+                                onClick={() => handleOnDelete(item.model?.id)}
+                              >
+                                Xóa yêu cầu
+                              </button>
+                            </div>
                           </div>
                         );
                       })}

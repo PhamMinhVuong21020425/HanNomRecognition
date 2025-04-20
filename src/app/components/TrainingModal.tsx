@@ -80,6 +80,7 @@ function TrainingModal({
 
   const handleSelectModel = (value: string) => {
     const selectedModel = userModels.find(model => model.id === value);
+    console.log('Selected model:', selectedModel);
     if (selectedModel) {
       setPretrainedModel(selectedModel);
     } else {
@@ -87,9 +88,17 @@ function TrainingModal({
     }
   };
 
+  const handleResetFields = () => {
+    form.resetFields();
+    setModelName('');
+    setEpochs(10);
+    setBatchSize(32);
+    setDescription('');
+    setPretrainedModel(defaultModel);
+  };
+
   const handleTrainSubmit = async () => {
     setVisible(false);
-    form.resetFields();
 
     if (!userData) {
       message.error('Login to start training');
@@ -160,6 +169,8 @@ function TrainingModal({
         formData.append('userId', userData.id);
         formData.append('datasetId', selDataset.id);
 
+        handleResetFields();
+
         const response = await axios.post('/be/train/detect', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
@@ -178,7 +189,7 @@ function TrainingModal({
 
         await openNotification({
           message: 'Training Started',
-          description: `Model "${modelName}" is now training.`,
+          description: `Model "${modelName}" is now training with pre-trained model ${pretrainedModel.name}.`,
           status: NotificationStatus.INFO,
         });
         break;
@@ -244,6 +255,8 @@ function TrainingModal({
         clsFormData.append('userId', userData.id);
         clsFormData.append('datasetId', selDataset.id);
 
+        handleResetFields();
+
         const clsResponse = await axios.post(
           '/be/train/classify',
           clsFormData,
@@ -265,7 +278,7 @@ function TrainingModal({
 
         await openNotification({
           message: 'Training Started',
-          description: `Model "${modelName}" is now training.`,
+          description: `Model "${modelName}" is now training with pre-trained model ${pretrainedModel.name}.`,
           status: NotificationStatus.INFO,
         });
         break;
