@@ -64,9 +64,15 @@ function ActiveLearningModal({
     }
   };
 
+  const handleResetFields = () => {
+    form.resetFields();
+    setNumberOfSamples(0);
+    setStrategy('');
+    setModelInference(defaultClsModel);
+  };
+
   const handleActiveLearningSubmit = async () => {
     setVisible(false);
-    form.resetFields();
 
     if (!userData) {
       message.error('Login to start active learning');
@@ -115,6 +121,8 @@ function ActiveLearningModal({
       formData.append('modelPath', modelInference.path);
       formData.append('num_classes', modelInference.num_classes.toString());
     }
+
+    handleResetFields();
 
     const response = await axios.post('/be/train/active-learning', formData, {
       headers: {
