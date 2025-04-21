@@ -20,7 +20,7 @@ import { getIntl } from '@/utils/i18n';
 
 import { Model } from '@/entities/model.entity';
 
-const PageSize = 10;
+const PageSize = 5;
 
 const YourModel: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -219,15 +219,16 @@ const YourModel: React.FC = () => {
             <div className="empty-state">
               <div className="empty-icon">📊</div>
               <h2>
-                {intl.formatMessage({ id: 'noModelsYet' }) ||
+                {intl.formatMessage({ id: 'yourmodel.noModelsYet' }) ||
                   "You don't have any models yet!"}
               </h2>
               <p>
-                {intl.formatMessage({ id: 'createModelPrompt' }) ||
+                {intl.formatMessage({ id: 'yourmodel.createModelPrompt' }) ||
                   'Create your first model to get started.'}
               </p>
               <a href="/import" className="create-model-button">
-                {intl.formatMessage({ id: 'createModel' }) || 'Create Model'}
+                {intl.formatMessage({ id: 'yourmodel.createModel' }) ||
+                  'Create Model'}
               </a>
             </div>
           )}
