@@ -12,7 +12,7 @@ export const getJobsByUserId = async (userId: string) => {
   const jobs = await jobRepository.find({
     where: { user: { id: userId } },
     order: { completed_at: 'DESC', created_at: 'DESC' },
-    relations: { model: true },
+    relations: { model: true, dataset: true },
   });
   return jobs;
 };
