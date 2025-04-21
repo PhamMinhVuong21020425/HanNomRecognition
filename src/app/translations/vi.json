@@ -91,7 +91,7 @@
   "forgot-pass.error": "Email này chưa đăng ký tài khoản",
   "forgot-pass.back": "Quay lại đăng nhập",
 
-  "import.choose1": "Chọn mô hình dự đoán hoặc",
+  "import.choose1": "Chọn mô hình dự đoán",
   "import.choose2": "Tạo mô hình của riêng mình",
   "import.discover": "để khám phá nhiều mô hình",
   "import.upload": "+ Tải lên hình ảnh",
@@ -158,6 +158,9 @@
   "yourmodel.delete": "Xóa",
   "yourmodel.confirmDelete": "Xác nhận xóa",
   "yourmodel.deleteModelWarning": "Bạn có chắc chắn muốn xóa mô hình này không? Tất cả dữ liệu sẽ bị xóa vĩnh viễn và không thể khôi phục lại.",
+  "yourmodel.noModelsYet": "Bạn chưa có mô hình nào!",
+  "yourmodel.createModelPrompt": "Tạo mô hình đầu tiên của bạn để bắt đầu.",
+  "yourmodel.createModel": "Tạo mô hình",
 
   "error.internalError": "Lỗi máy chủ",
   "error.user_exists": "Tài khoản đã tồn tại",

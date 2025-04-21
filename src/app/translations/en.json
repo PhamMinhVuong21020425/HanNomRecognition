@@ -91,7 +91,7 @@
   "forgot-pass.error": "This email is not registered",
   "forgot-pass.back": "Back to login",
 
-  "import.choose1": "Choose the inference model or",
+  "import.choose1": "Choose the inference model",
   "import.choose2": "Create your own model",
   "import.discover": "to discover more models",
   "import.upload": "+ Upload images",
@@ -158,6 +158,9 @@
   "yourmodel.delete": "Delete",
   "yourmodel.confirmDelete": "Confirm Delete",
   "yourmodel.deleteModelWarning": "Are you sure you want to delete this model? This action cannot be undone.",
+  "yourmodel.noModelsYet": "You don't have any models yet!",
+  "yourmodel.createModelPrompt": "Create your first model to get started.",
+  "yourmodel.createModel": "Create Model",
 
   "error.internalError": "Internal Server Error",
   "error.user_exists": "User already exists",

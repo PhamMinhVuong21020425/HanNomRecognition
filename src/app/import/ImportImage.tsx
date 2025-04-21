@@ -24,7 +24,6 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import Loading from '../components/Loading';
 import StepAnnotation from '../components/StepAnnotation';
-import CreateModel from '../components/CreateModel';
 import ImageFromServer from '../components/ImageFromServer';
 import {
   useAppDispatch,
@@ -672,12 +671,6 @@ function ImportImage() {
                             defaultMessage="Choose your model"
                           />
                         </div>
-                        <button onClick={handleClick} className="createButton">
-                          <FormattedMessage
-                            id="import.choose2"
-                            defaultMessage="or create a new one"
-                          />
-                        </button>
                       </div>
 
                       {listModel?.length > 0 && (
@@ -705,11 +698,9 @@ function ImportImage() {
                                   onClick={() => handleModelSelect(model)}
                                 >
                                   {model.name}
-                                  {model.user && (
-                                    <span className="text-gray-600 text-xs ml-1">
-                                      ({model.user.name})
-                                    </span>
-                                  )}
+                                  <span className="text-gray-600 text-xs ml-1">
+                                    ({model.user ? model.user.name : 'default'})
+                                  </span>
                                 </div>
                               ))}
                             </div>
@@ -839,11 +830,6 @@ function ImportImage() {
         </div>
       </main>
 
-      {userData ? (
-        <div className="create-model-section" ref={createModelRef}>
-          <CreateModel />
-        </div>
-      ) : null}
       <StepAnnotation />
       <Footer />
       {isLoading && (
