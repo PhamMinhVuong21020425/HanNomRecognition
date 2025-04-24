@@ -74,7 +74,8 @@ export const downloadFileServer = asyncHandler(
 export const saveAnnotationDataToDatabase = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const datasetId = req.body.datasetId as string;
-    const imageFiles = JSON.parse(req.body.imageFiles) as ImageType[];
+    const allImages = JSON.parse(req.body.allImages) as ImageType[];
+    const images = JSON.parse(req.body.images) as ImageType[];
     const labels = JSON.parse(req.body.labels) as (string | undefined)[];
     const isLabels = JSON.parse(req.body.isLabels) as boolean[];
     const files = req.files as Express.Multer.File[];
@@ -82,7 +83,8 @@ export const saveAnnotationDataToDatabase = asyncHandler(
     try {
       await saveAnnotationDataset(
         datasetId,
-        imageFiles,
+        allImages,
+        images,
         files,
         labels,
         isLabels

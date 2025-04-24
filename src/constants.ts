@@ -1,6 +1,7 @@
 export const THREE_HOURS = 3 * 3600 * 1000;
 export const EXPIRED_TIME = 2 * 60 * 1000;
 export const MAX_FILE_SIZE = 120 * 1024 * 1024;
+export const MAX_CHUNK_SIZE = 2 * 1024 * 1024;
 export const CLOSE_POINT_REGION = 6;
 export const IMAGE_TYPES = ['jpg', 'jpeg', 'png'];
 export const DOTS = '...';

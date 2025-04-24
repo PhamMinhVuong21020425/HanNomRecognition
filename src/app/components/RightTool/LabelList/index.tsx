@@ -53,12 +53,7 @@ function LabelList() {
   }, [selShapeIndex]);
 
   return (
-    <Row
-      className="max-h-[520px]"
-      justify="start"
-      style={{ overflow: 'auto' }}
-      ref={containerRef}
-    >
+    <Row justify="start" style={{ overflow: 'auto' }} ref={containerRef}>
       {shapes[selDrawImageIndex] &&
         Array.isArray(shapes[selDrawImageIndex]) &&
         shapes[selDrawImageIndex].map((item, index) => (

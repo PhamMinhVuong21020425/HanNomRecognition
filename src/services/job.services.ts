@@ -19,6 +19,7 @@ export const getJobsByUserId = async (userId: string) => {
 
 export const createJob = async (job: Partial<TrainingJob>) => {
   const newJob = jobRepository.create(job);
+  newJob.completed_at = new Date();
   return jobRepository.save(newJob);
 };
 

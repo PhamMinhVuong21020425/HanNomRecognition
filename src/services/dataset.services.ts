@@ -56,6 +56,7 @@ export const getDatasetsByUserId = async (userId: string) => {
 export const getImagesByDatasetId = async (datasetId: string) => {
   const images = await imageRepository.find({
     where: { dataset: { id: datasetId } },
+    order: { uploaded_at: 'ASC' },
   });
   return images;
 };
@@ -104,7 +105,8 @@ export const deleteImageById = async (id: string) => {
 
 export const saveAnnotationDataset = async (
   datasetId: string,
-  imageFiles: ImageType[],
+  allImages: ImageType[],
+  images: ImageType[],
   files: Express.Multer.File[],
   labels: (string | undefined)[],
   isLabels: boolean[]
@@ -115,7 +117,7 @@ export const saveAnnotationDataset = async (
   }
 
   const deleteImages = dataset.images.filter(
-    img => !imageFiles.some(item => item.name === img.name)
+    img => !allImages.some(item => item.name === img.name)
   );
 
   for (const img of deleteImages) {
@@ -124,7 +126,7 @@ export const saveAnnotationDataset = async (
   }
 
   for (let idx = 0; idx < files.length; idx++) {
-    const img = imageFiles[idx];
+    const img = images[idx];
     const file = files[idx];
     const existImage = await getImageByName(img.name);
     let label = labels[idx];
