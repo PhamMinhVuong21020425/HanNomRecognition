@@ -159,6 +159,7 @@
   "yourmodel.confirmDelete": "Confirm Delete",
   "yourmodel.deleteModelWarning": "Are you sure you want to delete this model? This action cannot be undone.",
   "yourmodel.noModelsYet": "You don't have any models yet!",
+  "yourmodel.noModelsFound": "No models found",
   "yourmodel.createModelPrompt": "Create your first model to get started.",
   "yourmodel.createModel": "Create Model",
 

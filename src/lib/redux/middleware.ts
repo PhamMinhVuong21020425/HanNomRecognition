@@ -2,6 +2,9 @@
 import { debounce } from 'lodash';
 import { createLogger } from 'redux-logger';
 import { Middleware } from '@reduxjs/toolkit';
+
+/* Instruments */
+import { ReduxDispatch } from './store';
 import { saveAnnotationData } from './slices/annotationSlice/thunkActions';
 
 export const loggerMiddleware = [
@@ -28,9 +31,12 @@ const ACTIONS_TO_WATCH = [
   'annotation/deleteAllShapes',
 ];
 
-const debouncedSave = debounce(dispatch => {
-  dispatch(saveAnnotationData());
-}, 2000);
+const debouncedSave = debounce(
+  (dispatch: ReduxDispatch, actionType: string) => {
+    dispatch(saveAnnotationData(actionType));
+  },
+  2000
+);
 
 export const saveAnnotationMiddleware: Middleware =
   ({ dispatch }) =>
@@ -39,7 +45,7 @@ export const saveAnnotationMiddleware: Middleware =
     const result = next(action);
 
     if (ACTIONS_TO_WATCH.includes(action.type)) {
-      debouncedSave(dispatch);
+      debouncedSave(dispatch, action.type);
     }
 
     return result;
