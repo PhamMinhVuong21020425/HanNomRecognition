@@ -210,7 +210,7 @@ const YourModel: React.FC = () => {
                 </div>
               ) : (
                 <div className="no-results">
-                  {intl.formatMessage({ id: 'noModelsFound' }) ||
+                  {intl.formatMessage({ id: 'yourmodel.noModelsFound' }) ||
                     'No models found matching your search.'}
                 </div>
               )}
