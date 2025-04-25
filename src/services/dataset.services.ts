@@ -76,6 +76,12 @@ export const updateDataset = async (id: string, dataset: Partial<Dataset>) => {
 };
 
 export const deleteDatasetById = async (id: string) => {
+  const images = await getImagesByDatasetId(id);
+  for (const img of images) {
+    if (fs.existsSync(img.path)) {
+      fs.unlinkSync(img.path);
+    }
+  }
   const result = await datasetRepository.delete(id);
   return result.affected ? true : false;
 };
