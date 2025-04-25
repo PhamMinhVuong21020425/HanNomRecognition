@@ -7,6 +7,8 @@ import {
   setIsOpenDescript,
   selectLanguage,
   selectUser,
+  updateModelAsync,
+  deleteModelAsync,
 } from '@/lib/redux';
 import { Model } from '@/entities/model.entity';
 import { getIntl } from '@/utils/i18n';
@@ -50,14 +52,7 @@ const ModelDetailModal = ({ model }: { model: Model }) => {
   const handleSaveChanges = async () => {
     try {
       setIsLoading(true);
-      // Call your API to update the model
-      // await updateModel(editedModel.id, editedModel);
-
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      // After successful update, refresh the model list
-      // dispatch(getAllModelsAsync(userData.id));
-
+      dispatch(updateModelAsync(editedModel));
       setIsEditing(false);
       setIsLoading(false);
       handleClose();
@@ -70,14 +65,7 @@ const ModelDetailModal = ({ model }: { model: Model }) => {
   const handleDeleteModel = async () => {
     try {
       setIsLoading(true);
-      // Call your API to update the model
-      // await deleteModel(model.id);
-
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      // After successful deletion, refresh the model list
-      // dispatch(getAllModelsAsync(userData.id));
-
+      dispatch(deleteModelAsync(model.id));
       setIsLoading(false);
       handleClose();
     } catch (error) {
@@ -357,17 +345,19 @@ const ModelDetailModal = ({ model }: { model: Model }) => {
                 </div>
               </div>
 
-              <div className="action-buttons">
-                <button className="edit-button" onClick={handleStartEditing}>
-                  {intl.formatMessage({ id: 'yourmodel.edit' }) || 'Edit'}
-                </button>
-                <button
-                  className="delete-button"
-                  onClick={() => setIsConfirmingDelete(true)}
-                >
-                  {intl.formatMessage({ id: 'yourmodel.delete' }) || 'Delete'}
-                </button>
-              </div>
+              {userData?.id === model.user?.id ? (
+                <div className="action-buttons">
+                  <button className="edit-button" onClick={handleStartEditing}>
+                    {intl.formatMessage({ id: 'yourmodel.edit' }) || 'Edit'}
+                  </button>
+                  <button
+                    className="delete-button"
+                    onClick={() => setIsConfirmingDelete(true)}
+                  >
+                    {intl.formatMessage({ id: 'yourmodel.delete' }) || 'Delete'}
+                  </button>
+                </div>
+              ) : null}
             </>
           )}
         </div>
