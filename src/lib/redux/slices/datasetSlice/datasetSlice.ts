@@ -3,7 +3,11 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 /* Instruments */
 import { Dataset } from '@/entities/dataset.entity';
-import { getAllDatasetsAsync, getDatasetsOfUserAsync } from './thunkActions';
+import {
+  getAllDatasetsAsync,
+  getDatasetsOfUserAsync,
+  updateDatasetAsync,
+} from './thunkActions';
 
 /* Types */
 export interface DatasetState {
@@ -59,6 +63,46 @@ export const datasetSlice = createSlice({
         (state, action: PayloadAction<Dataset[]>) => {
           state.status = 'idle';
           state.datasets = action.payload;
+        }
+      )
+
+      // updateDatasetAsync
+      .addCase(updateDatasetAsync.pending, state => {
+        state.status = 'loading';
+      })
+      .addCase(updateDatasetAsync.rejected, state => {
+        state.status = 'failed';
+      })
+      .addCase(
+        updateDatasetAsync.fulfilled,
+        (state, action: PayloadAction<Dataset>) => {
+          state.status = 'idle';
+          const updatedDataset = action.payload;
+          const { name, description, is_public, updated_at } = updatedDataset;
+
+          const index = state.datasets.findIndex(
+            dataset => dataset.id === updatedDataset.id
+          );
+
+          if (index !== -1) {
+            state.datasets[index] = {
+              ...state.datasets[index],
+              name,
+              description,
+              is_public,
+              updated_at,
+            };
+          }
+
+          if (state.selDataset?.id === updatedDataset.id) {
+            state.selDataset = {
+              ...state.selDataset,
+              name,
+              description,
+              is_public,
+              updated_at,
+            };
+          }
         }
       );
   },
