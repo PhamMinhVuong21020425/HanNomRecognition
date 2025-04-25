@@ -58,12 +58,11 @@ export const createDatasetPost = asyncHandler(
 
 export const updateDatasetPost = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const id = req.body.id;
+    const { id, name, description, is_public } = req.body;
     const dataset = {
-      name: req.body.name,
-      description: req.body.description,
-      type: req.body.type,
-      is_public: req.body.isPublic,
+      name,
+      description,
+      is_public,
     };
     const updatedDataset = await updateDataset(id, dataset);
     res.json(updatedDataset);
