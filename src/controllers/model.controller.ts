@@ -24,11 +24,11 @@ export const modelsOfUserGet = asyncHandler(
 
 export const updateModelPost = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { id, name, description, isPublic } = req.body;
+    const { id, name, description, is_public } = req.body;
     const model = {
       name,
       description,
-      is_public: isPublic,
+      is_public,
     };
     const updatedModel = await updateModel(id, model);
     res.json(updatedModel);
