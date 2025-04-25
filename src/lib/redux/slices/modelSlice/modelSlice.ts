@@ -3,7 +3,12 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 /* Instruments */
 import { Model } from '@/entities/model.entity';
-import { getAllModelsAsync, getModelsOfUserAsync } from './thunkActions';
+import {
+  getAllModelsAsync,
+  getModelsOfUserAsync,
+  updateModelAsync,
+  deleteModelAsync,
+} from './thunkActions';
 
 /* Types */
 export interface ModelState {
@@ -66,6 +71,47 @@ export const modelSlice = createSlice({
         (state, action: PayloadAction<Model[]>) => {
           state.status = 'idle';
           state.userModels = action.payload;
+        }
+      )
+
+      // updateModelAsync
+      .addCase(updateModelAsync.pending, state => {
+        state.status = 'loading';
+      })
+      .addCase(updateModelAsync.rejected, state => {
+        state.status = 'failed';
+      })
+      .addCase(
+        updateModelAsync.fulfilled,
+        (state, action: PayloadAction<Model>) => {
+          state.status = 'idle';
+          const updatedModel = action.payload;
+          const index = state.allModels.findIndex(
+            model => model.id === updatedModel.id
+          );
+          if (index !== -1) {
+            const { name, description, is_public } = updatedModel;
+            state.allModels[index].name = name;
+            state.allModels[index].description = description;
+            state.allModels[index].is_public = is_public;
+          }
+        }
+      )
+
+      // deleteModelAsync
+      .addCase(deleteModelAsync.pending, state => {
+        state.status = 'loading';
+      })
+      .addCase(deleteModelAsync.rejected, state => {
+        state.status = 'failed';
+      })
+      .addCase(
+        deleteModelAsync.fulfilled,
+        (state, action: PayloadAction<string | null>) => {
+          state.status = 'idle';
+          state.allModels = state.allModels.filter(
+            model => model.id !== action.payload
+          );
         }
       );
   },
