@@ -10,7 +10,7 @@ import {
   DEFAULT_SAVE_FOLDER,
 } from '../constants';
 
-import type { Coordinate, Shape, ImageSize } from '../lib/redux';
+import type { Coordinate, BoundingBox, Shape, ImageSize } from '../lib/redux';
 import type {
   CocoAnnotation,
   CocoCategory,
@@ -172,6 +172,40 @@ export const formatDateToString = (date: Date) => {
   const seconds = pad(date.getSeconds());
 
   return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+};
+
+export const calculateBoundingBox = (
+  coordinates: Coordinate[]
+): BoundingBox => {
+  if (!coordinates || coordinates.length === 0) {
+    return { x: 0, y: 0, width: 0, height: 0 };
+  }
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  // Find min and max coordinates
+  coordinates.forEach(coord => {
+    minX = Math.min(minX, coord.x);
+    minY = Math.min(minY, coord.y);
+    maxX = Math.max(maxX, coord.x);
+    maxY = Math.max(maxY, coord.y);
+  });
+
+  const padding = 1;
+  minX = Math.max(0, minX - padding);
+  minY = Math.max(0, minY - padding);
+  maxX += padding;
+  maxY += padding;
+
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY,
+  };
 };
 
 export function getShapeXYMaxMin(paths: Coordinate[]) {

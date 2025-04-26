@@ -5,6 +5,13 @@ export type Coordinate = {
   y: number;
 };
 
+export type BoundingBox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export type ImageSize = {
   width: number;
   height: number;

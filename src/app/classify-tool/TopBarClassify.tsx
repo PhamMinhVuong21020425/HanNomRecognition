@@ -188,7 +188,7 @@ function TopBarClassify() {
             }
 
             processedCount += batch.length;
-            if (validImageCount > 100) {
+            if (validImageCount > 500) {
               setIsLoading(false);
               message.success(
                 `Completed processing. Added ${validImageCount} images.`
