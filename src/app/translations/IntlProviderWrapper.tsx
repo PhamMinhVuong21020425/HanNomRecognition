@@ -6,7 +6,7 @@ import English from './en.json';
 import { useAppSelector, selectLanguage } from '@/lib/redux';
 
 function IntlProviderWrapper({ children }: { children: ReactNode }) {
-  let locale = useAppSelector(selectLanguage);
+  const locale = useAppSelector(selectLanguage);
   let language = English;
   if (locale === 'vi') language = Vietnamese;
 

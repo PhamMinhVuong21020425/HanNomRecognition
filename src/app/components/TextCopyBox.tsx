@@ -33,13 +33,15 @@ function TextCopyBox() {
 
     let sortedShapes;
     switch (mode) {
-      case 'topToBottomRightToLeft':
+      case 'topToBottomRightToLeft': {
         sortedShapes = sortShapesByColumn(shapes[selDrawImageIndex]);
         break;
-      case 'leftToRightTopToBottom':
+      }
+      case 'leftToRightTopToBottom': {
         sortedShapes = sortShapesByRow(shapes[selDrawImageIndex]);
         break;
-      default:
+      }
+      default: {
         const visibleShapes = shapes[selDrawImageIndex].filter(
           shape => shape.visible
         );
@@ -49,6 +51,7 @@ function TextCopyBox() {
           (_, i) => visibleShapes.slice(i * size, (i + 1) * size)
         );
         break;
+      }
     }
 
     return sortedShapes

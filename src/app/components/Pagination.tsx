@@ -43,7 +43,7 @@ const Pagination: React.FC<PaginationProps> = props => {
     onPageChange(currentPage - 1);
   };
 
-  let lastPage = paginationRange[paginationRange.length - 1];
+  const lastPage = paginationRange[paginationRange.length - 1];
   return (
     <ul
       className={classnames('pagination-container', {
@@ -60,7 +60,11 @@ const Pagination: React.FC<PaginationProps> = props => {
       </li>
       {paginationRange.map((pageNumber: number | string) => {
         if (pageNumber === DOTS) {
-          return <li className="pagination-item dots">&#8230;</li>;
+          return (
+            <li key={pageNumber} className="pagination-item dots">
+              &#8230;
+            </li>
+          );
         }
 
         return (

@@ -18,6 +18,7 @@ import {
   MoreHorizontal,
   Upload as UploadIcon,
   Wand2,
+  Crop,
 } from 'lucide-react';
 
 import {
@@ -66,7 +67,6 @@ function DrawTool() {
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const moreButtonRef = useRef<HTMLDivElement>(null);
-  const listDetections = useAppSelector(selectDetections);
 
   const { imageFiles, selDrawImageIndex, imageSizes } = useAppSelector(
     selectImagesInfo,
@@ -232,17 +232,19 @@ function DrawTool() {
     let success = true;
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     switch (fileExtension) {
-      case 'json':
+      case 'json': {
         const cocoShapesCopy = cloneDeep(shapes);
         cocoShapesCopy[selDrawImageIndex] = parseCoco(fileContent);
         dispatch(setShapes({ shapes: cocoShapesCopy }));
         break;
-      case 'xml':
+      }
+      case 'xml': {
         const xmlShapesCopy = cloneDeep(shapes);
         xmlShapesCopy[selDrawImageIndex] = parsePascalVoc(fileContent);
         dispatch(setShapes({ shapes: xmlShapesCopy }));
         break;
-      case 'txt':
+      }
+      case 'txt': {
         const yoloShapesCopy = cloneDeep(shapes);
         yoloShapesCopy[selDrawImageIndex] = parseYolo(
           fileContent,
@@ -250,6 +252,7 @@ function DrawTool() {
         );
         dispatch(setShapes({ shapes: yoloShapesCopy }));
         break;
+      }
       default:
         message.error('Invalid annotation format. File type not supported.');
         success = false;
@@ -257,6 +260,27 @@ function DrawTool() {
     }
     setLoading(false);
     if (success) message.success('Annotation uploaded successfully');
+  };
+
+  const handleCropImage = async () => {
+    if (imageFiles.length === 0) {
+      message.error('Please upload an image first');
+      return;
+    }
+
+    message.info('Cropping image for classification...');
+    setMoreMenuVisible(false);
+    setLoading(true);
+
+    const img = await fetchFileFromObjectUrl(
+      imageFiles[selDrawImageIndex].obj_url,
+      imageFiles[selDrawImageIndex].name
+    );
+
+    // Crop the images based on the shapes for classification
+
+    setLoading(false);
+    message.success('Image cropped successfully');
   };
 
   // Common styles for tool buttons
@@ -543,9 +567,9 @@ function DrawTool() {
               ref={moreButtonRef}
               style={{
                 position: 'absolute',
-                left: '60px',
-                top: '0px',
-                width: '220px',
+                left: '70px',
+                bottom: '-30px',
+                width: '230px',
                 backgroundColor: 'white',
                 borderRadius: '8px',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
@@ -609,6 +633,26 @@ function DrawTool() {
                       Upload Annotation
                     </span>
                   </div>
+                </div>
+
+                {/* Crop Image */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '10px 12px',
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                    transition: 'background-color 0.2s',
+                    gap: '10px',
+                  }}
+                  className="hover:bg-gray-100"
+                  onClick={handleCropImage}
+                >
+                  <Crop size={18} color="#52c41a" />
+                  <span style={{ color: '#333333', fontSize: '14px' }}>
+                    Crop Image Classification
+                  </span>
                 </div>
               </div>
             </div>

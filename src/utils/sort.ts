@@ -32,7 +32,7 @@ export const sortShapesByColumn = (shapesByImageIndex: Shape[]): Shape[][] => {
   // Group characters into columns
   visibleShapes.forEach(shape => {
     // Find a column that this shape belongs to based on x position
-    let columnIndex = columns.findIndex(column => {
+    const columnIndex = columns.findIndex(column => {
       if (column.length === 0) return false;
       const columnX = column[0].center.x;
       return Math.abs(shape.center.x - columnX) < columnTolerance;
@@ -75,7 +75,7 @@ export const sortShapesByRow = (shapesByImageIndex: Shape[]): Shape[][] => {
   // Group characters into rows
   visibleShapes.forEach(shape => {
     // Find a row that this shape belongs to based on y position
-    let rowIndex = rows.findIndex(row => {
+    const rowIndex = rows.findIndex(row => {
       if (row.length === 0) return false;
       const rowY = row[0].center.y;
       return Math.abs(shape.center.y - rowY) < rowTolerance;

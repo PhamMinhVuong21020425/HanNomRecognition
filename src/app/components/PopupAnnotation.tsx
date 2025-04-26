@@ -54,13 +54,13 @@ function PopupAnnotation(props: PopupAnnotationProps) {
   });
 
   const userData = useAppSelector(selectUser);
-  let userId = userData!.id;
+  const userId = userData!.id;
 
   const onCancel = () => {
     dispatch(setIsUploadModal(false));
   };
   const handleSelectFile = (info: UploadChangeParam<UploadFile<any>>) => {
-    let file = info.file.originFileObj;
+    const file = info.file.originFileObj;
     if (!file) {
       return;
     }
@@ -111,14 +111,7 @@ function PopupAnnotation(props: PopupAnnotationProps) {
       return;
     }
 
-    let data = await handleCreateModel(
-      userId,
-      name,
-      '',
-      description,
-      content,
-      format
-    );
+    await handleCreateModel(userId, name, '', description, content, format);
 
     dispatch(setIsUploadModal(true));
     message.success('Đã thực hiện thành công!');

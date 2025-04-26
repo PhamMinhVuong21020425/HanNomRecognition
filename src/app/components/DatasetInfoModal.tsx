@@ -334,7 +334,7 @@ const DatasetInfoModal = (props: DatasetInfoModalProps) => {
           <div>
             <p className="text-red-600 mb-4">
               You are about to delete{' '}
-              <span className="font-semibold">"{dataset.name}"</span>. This
+              <span className="font-semibold">{`"${dataset.name}"`}</span>. This
               action cannot be undone.
             </p>
             <div className="bg-white border border-red-200 rounded p-4 mb-4">
@@ -349,8 +349,8 @@ const DatasetInfoModal = (props: DatasetInfoModalProps) => {
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 To confirm, type{' '}
-                <span className="font-semibold">"{dataset.name}"</span> in the
-                box
+                <span className="font-semibold">{`"${dataset.name}"`}</span> in
+                the box
               </label>
               <Input
                 placeholder={`Type "${dataset.name}" to confirm`}
