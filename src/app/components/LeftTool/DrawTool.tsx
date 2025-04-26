@@ -1,4 +1,5 @@
 import axios from 'axios';
+import JSZip from 'jszip';
 import { cloneDeep } from 'lodash';
 import { shallowEqual } from 'react-redux';
 import { useEffect, useState, useRef, ChangeEvent } from 'react';
@@ -31,7 +32,6 @@ import {
   setShapes,
   useAppDispatch,
   useAppSelector,
-  selectDetections,
   setDetections,
   setSelShapeIndex,
   selectImagesInfo,
@@ -46,11 +46,14 @@ import {
 import { DRAW_STATUS_TYPES, SHAPE_TYPES, ANNOTATION_TYPES } from '@/constants';
 import {
   fetchFileFromObjectUrl,
+  calculateBoundingBox,
   parseCoco,
   parseYolo,
   parsePascalVoc,
 } from '@/utils/general';
 import Loading from '../Loading';
+import type { ImageType } from '@/types/ImageType';
+import type { Shape } from '@/lib/redux';
 
 // Define active tool type
 type ActiveToolType =
@@ -262,6 +265,106 @@ function DrawTool() {
     if (success) message.success('Annotation uploaded successfully');
   };
 
+  const cropImagesAndCreateDataset = async (
+    imgFile: ImageType,
+    shapesOfImg: Shape[]
+  ): Promise<void> => {
+    // Create dataset folder structure
+    const zip = new JSZip();
+    const folderName = `classify_${imgFile.name.split('.')[0].split('$$').pop()}`;
+    const datasetFolder = zip.folder(folderName);
+    if (!datasetFolder) {
+      throw new Error('Failed to create dataset folder');
+    }
+
+    // Create a canvas to draw and crop the image
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Failed to get canvas context');
+    }
+
+    // Load the image into an HTML Image element
+    const loadImagePromise = new Promise<HTMLImageElement>(resolve => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.src = imgFile.obj_url;
+    });
+
+    const imageElement = await loadImagePromise;
+
+    // Keep track of unique labels
+    const processedLabels = new Set<string>();
+
+    // Process each shape and crop the image
+    for (let i = 0; i < shapesOfImg.length; i++) {
+      const shape = shapesOfImg[i];
+
+      if (!shape.visible) continue;
+
+      // Calculate bounding box of the shape
+      const boundingBox = calculateBoundingBox(shape.paths);
+
+      // Skip if bounding box has no area
+      if (boundingBox.width === 0 || boundingBox.height === 0) continue;
+
+      // Create directory for this class if it doesn't exist yet
+      if (!processedLabels.has(shape.label)) {
+        datasetFolder.folder(shape.label);
+        processedLabels.add(shape.label);
+      }
+
+      const labelFolder = datasetFolder.folder(shape.label);
+      if (!labelFolder) {
+        throw new Error(`Failed to create folder for label: ${shape.label}`);
+      }
+
+      // Set canvas dimensions to bounding box size
+      canvas.width = boundingBox.width;
+      canvas.height = boundingBox.height;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the cropped portion of the image
+      ctx.drawImage(
+        imageElement,
+        boundingBox.x,
+        boundingBox.y,
+        boundingBox.width,
+        boundingBox.height,
+        0,
+        0,
+        boundingBox.width,
+        boundingBox.height
+      );
+
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>(resolve =>
+        canvas.toBlob(blob => {
+          if (blob) resolve(blob);
+          else throw new Error('Failed to create blob from canvas');
+        }, 'image/png')
+      );
+
+      // Generate a unique filename
+      const filename = `${shape.label}_${imgFile.name.split('.')[0].split('$$').pop()}_${i}.png`;
+
+      // Add the cropped image to the zip in the appropriate class folder
+      labelFolder.file(filename, blob);
+    }
+
+    // Generate and download the zip file
+    const content = await zip.generateAsync({ type: 'blob' });
+    const downloadLink = document.createElement('a');
+    downloadLink.href = URL.createObjectURL(content);
+    downloadLink.download = `${folderName}.zip`;
+    downloadLink.click();
+
+    // Clean up the created object URL
+    URL.revokeObjectURL(downloadLink.href);
+  };
+
   const handleCropImage = async () => {
     if (imageFiles.length === 0) {
       message.error('Please upload an image first');
@@ -272,15 +375,21 @@ function DrawTool() {
     setMoreMenuVisible(false);
     setLoading(true);
 
-    const img = await fetchFileFromObjectUrl(
-      imageFiles[selDrawImageIndex].obj_url,
-      imageFiles[selDrawImageIndex].name
-    );
-
     // Crop the images based on the shapes for classification
-
-    setLoading(false);
-    message.success('Image cropped successfully');
+    try {
+      const currentImage = imageFiles[selDrawImageIndex];
+      const shapesOfImg = shapes[selDrawImageIndex];
+      await cropImagesAndCreateDataset(currentImage, shapesOfImg);
+      message.success('Image cropped successfully');
+    } catch (error) {
+      console.error(
+        'Error cropping image:',
+        error instanceof Error ? error.message : String(error)
+      );
+      message.error('Failed to crop image');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Common styles for tool buttons
