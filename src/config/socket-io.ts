@@ -2,6 +2,8 @@ import { Server as HTTPServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 import * as redis from 'redis';
+import dotenv from 'dotenv';
+dotenv.config();
 
 interface UserSocket {
   socketId: string;
@@ -18,7 +20,9 @@ interface MessageSocket {
 let io: Server;
 
 // Create Redis client
-const redisClient = redis.createClient();
+const redisClient = redis.createClient({
+  url: `redis://${process.env.REDIS_HOST!}:${process.env.REDIS_PORT!}`,
+});
 
 // Connect to Redis
 (async () => {

@@ -10,7 +10,7 @@ export const getFileServer = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { filePath } = req.body;
 
-    const allowedBasePath = path.resolve(__dirname, '../../uploads');
+    const allowedBasePath = path.resolve(process.cwd(), 'uploads');
     const absolutePath = path.resolve(filePath);
 
     if (!absolutePath.startsWith(allowedBasePath)) {
