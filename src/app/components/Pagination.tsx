@@ -1,4 +1,4 @@
-import '../scss/pagination.scss';
+import '../scss/Pagination.scss';
 import React from 'react';
 import classnames from 'classnames';
 import { usePagination } from '../hooks/usePagination';

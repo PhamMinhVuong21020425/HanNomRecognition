@@ -1,0 +1,134 @@
+services:
+  db:
+    container_name: sino_nom_db
+    image: mysql:latest
+    cap_add:
+      - SYS_NICE
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    expose:
+      - ${DB_PORT}
+    entrypoint: sh -c "/usr/local/bin/docker-entrypoint.sh --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci"
+    volumes:
+      - db_volume:/var/lib/mysql
+      - ./src/sql/sino_nom.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      interval: 30s
+      timeout: 15s
+      retries: 5
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin-container
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '90:80'
+    environment:
+      PMA_HOST: db
+    networks:
+      - internal
+
+  redis:
+    image: redis:alpine
+    container_name: redis-container
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_volume:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-container
+    restart: always
+    ports:
+      - '5672:5672' # AMQP protocol port
+      - '15672:15672' # Management UI port
+    volumes:
+      - rabbitmq_volume:/var/lib/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD', 'rabbitmqctl', 'status']
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  web:
+    container_name: sino_nom_web
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment: # override environment variables
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+    volumes:
+      - web_volume:/hannomize
+      - node_volume:/hannomize/node_modules
+      - upload_volume:/hannomize/uploads
+    networks:
+      - internal
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    environment:
+      DOMAIN: ${DOMAIN}
+      PORT: ${PORT}
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro # read-only
+      - ./nginx/templates:/etc/nginx/templates
+      - upload_volume:/var/www/uploads
+    depends_on:
+      web:
+        condition: service_started
+    networks:
+      - internal
+
+volumes:
+  db_volume:
+  redis_volume:
+  rabbitmq_volume:
+  web_volume:
+  node_volume:
+  upload_volume:
+
+networks:
+  internal:
+    driver: bridge
