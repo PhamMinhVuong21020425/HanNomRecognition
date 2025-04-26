@@ -59,7 +59,7 @@ const VerificationForm = ({ email }: { email: string }) => {
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
               {intl.formatMessage({ id: 'verify.subtitle' })}{' '}
-              <span className="text-indigo-600">"{email}"</span>
+              <span className="text-indigo-600">{`"${email}"`}</span>
             </p>
           </div>
 

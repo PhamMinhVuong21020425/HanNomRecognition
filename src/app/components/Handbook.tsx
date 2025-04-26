@@ -5,7 +5,7 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 
 function Handbook() {
-  let settings = {
+  const settings = {
     dots: false,
     infinite: true,
     speed: 500,

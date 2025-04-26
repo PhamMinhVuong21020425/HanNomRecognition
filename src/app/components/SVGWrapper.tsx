@@ -580,7 +580,7 @@ function SVGWrapper() {
       // keep drawing
       pointsX = [];
       pointsY = [];
-      for (var i = 0; i < drawingShape.paths.length; i++) {
+      for (let i = 0; i < drawingShape.paths.length; i++) {
         pointsX.push(drawingShape.paths[i].x);
         pointsY.push(drawingShape.paths[i].y);
       }
@@ -787,8 +787,8 @@ function SVGWrapper() {
     // danh sách tất cả các shapes đang có, phải kiểu dữ liệu mảng
     //const listShape = [shapeFactoryTest(coordinates[0]), shapeFactoryTest(coordinates[1])];
     const result = listDetections.find(item => {
-      let imageWithoutEx = item.image_name.split('.')[0];
-      let imageNameNew = imageName.split('.')[0];
+      const imageWithoutEx = item.image_name.split('.')[0];
+      const imageNameNew = imageName.split('.')[0];
       return imageWithoutEx === imageNameNew;
     });
 
@@ -811,8 +811,8 @@ function SVGWrapper() {
     const shapesCopy = cloneDeep(shapes);
 
     shapesCopy[selDrawImageIndex] = [];
-    for (var i = 0; i < listBoxes.length; i++) {
-      let currentShapeCopy = cloneDeep(
+    for (let i = 0; i < listBoxes.length; i++) {
+      const currentShapeCopy = cloneDeep(
         shapeFactoryTest(listBoxes[i].coordinates)
       );
       currentShapeCopy.paths.pop();

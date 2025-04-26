@@ -118,14 +118,15 @@ function LabelBox() {
   };
 
   const onStart = (event: DraggableEvent, uiData: DraggableData) => {
-    const { clientWidth, clientHeight } = window?.document?.documentElement;
-    const targetRect = draggleRef?.current?.getBoundingClientRect();
-    if (!targetRect) return;
+    const { clientWidth, clientHeight } = document.documentElement;
+    const node = draggleRef.current;
+    if (!node) return;
+    const targetRect = node.getBoundingClientRect();
     setBounds({
-      left: -targetRect?.left + uiData?.x,
-      right: clientWidth - (targetRect?.right - uiData?.x),
-      top: -targetRect?.top + uiData?.y,
-      bottom: clientHeight - (targetRect?.bottom - uiData?.y),
+      left: -targetRect.left + uiData.x,
+      right: clientWidth - (targetRect.right - uiData.x),
+      top: -targetRect.top + uiData.y,
+      bottom: clientHeight - (targetRect.bottom - uiData.y),
     });
   };
 

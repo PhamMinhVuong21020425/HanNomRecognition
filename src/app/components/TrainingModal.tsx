@@ -116,7 +116,7 @@ function TrainingModal({
     }
 
     switch (type) {
-      case ProblemType.DETECT:
+      case ProblemType.DETECT: {
         const filePromises = [];
         const sizePromises = [];
         for (const img of imageFiles) {
@@ -193,8 +193,9 @@ function TrainingModal({
           status: NotificationStatus.INFO,
         });
         break;
+      }
 
-      case ProblemType.CLASSIFY:
+      case ProblemType.CLASSIFY: {
         const clsFilePromises = imageFiles.map(img =>
           fetchFileFromObjectUrl(img.obj_url, normalizeFileName(img.name))
         );
@@ -282,6 +283,7 @@ function TrainingModal({
           status: NotificationStatus.INFO,
         });
         break;
+      }
     }
   };
 

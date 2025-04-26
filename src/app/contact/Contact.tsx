@@ -125,6 +125,7 @@ function Contact() {
                     className="hover:text-blue-600"
                     href="https://www.facebook.com/UET.VNUH"
                     target="_blank"
+                    rel="noreferrer"
                   >
                     {' '}
                     https://www.facebook.com/UET.VNUH{' '}
