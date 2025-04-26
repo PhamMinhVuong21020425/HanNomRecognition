@@ -5,7 +5,7 @@ import Slider from 'react-slick';
 import { FormattedMessage } from 'react-intl';
 
 function Gallery() {
-  let settings = {
+  const settings = {
     dots: true,
     infinite: true,
     speed: 500,

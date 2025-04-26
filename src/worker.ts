@@ -24,7 +24,7 @@ async function startWorker() {
         console.log(`[✔] Processing task: ${task.id}`);
         try {
           switch (task.type) {
-            case 'detect':
+            case 'detect': {
               const formData = new FormData();
               Object.entries(task).forEach(([key, value]) =>
                 formData.append(key, String(value))
@@ -67,8 +67,9 @@ async function startWorker() {
 
               console.log(`[✔] Result sent for task ${task.id}`, result.data);
               break;
+            }
 
-            case 'classify':
+            case 'classify': {
               const clsFormData = new FormData();
               Object.entries(task).forEach(([key, value]) =>
                 clsFormData.append(key, String(value))
@@ -117,8 +118,9 @@ async function startWorker() {
                 classifyResult.data
               );
               break;
+            }
 
-            case 'active_learning':
+            case 'active_learning': {
               const alFormData = new FormData();
               Object.entries(task).forEach(([key, value]) =>
                 alFormData.append(key, String(value))
@@ -161,6 +163,7 @@ async function startWorker() {
                 alResult.data
               );
               break;
+            }
 
             default:
               console.error(`[❌] Unknown task type: ${task.type}`);

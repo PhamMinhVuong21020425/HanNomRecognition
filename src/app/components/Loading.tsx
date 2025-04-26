@@ -2,7 +2,7 @@ import { useState } from 'react';
 import PacmanLoader from 'react-spinners/PacmanLoader';
 
 function Loading() {
-  let [color, setColor] = useState('#ffff00');
+  const [color, setColor] = useState('#ffff00');
 
   return (
     <div className="loading">

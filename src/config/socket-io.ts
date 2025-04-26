@@ -11,7 +11,7 @@ interface UserSocket {
 interface MessageSocket {
   id: string;
   to: string;
-  content: Object;
+  content: object;
   created_at: Date;
 }
 
@@ -101,7 +101,7 @@ export const getIO = (): Server => {
   return io;
 };
 
-export const sendSystemMessage = async (userId: string, data: Object) => {
+export const sendSystemMessage = async (userId: string, data: object) => {
   const message: MessageSocket = {
     id: uuidv4(),
     to: userId,

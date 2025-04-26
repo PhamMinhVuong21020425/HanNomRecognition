@@ -131,7 +131,7 @@ function TopBar() {
       }
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
       switch (fileExtension) {
-        case 'zip':
+        case 'zip': {
           // Extract files from the ZIP file
           const zip = await jsZip.loadAsync(file);
           const pathFiles = Object.keys(zip.files);
@@ -169,14 +169,16 @@ function TopBar() {
           const newAnnotations = await Promise.all(annotationPromises);
           annotations = [...annotations, ...newAnnotations];
           break;
+        }
         case 'json':
         case 'xml':
-        case 'txt':
+        case 'txt': {
           annotations.push({
             text: await file.text(),
             name: file.name,
           });
           break;
+        }
         default:
           message.error('File type not supported');
           success = false;
@@ -212,19 +214,22 @@ function TopBar() {
 
       const fileExtension = annotations[i].name.split('.').pop()?.toLowerCase();
       switch (fileExtension) {
-        case 'txt':
+        case 'txt': {
           const size = await getImageSizeFromUrl(image.obj_url);
           newShapes[imgIndex] = parseYolo(
             annotations[i].text,
             imageSizeFactory(size)
           );
           break;
-        case 'xml':
+        }
+        case 'xml': {
           newShapes[imgIndex] = parsePascalVoc(annotations[i].text);
           break;
-        case 'json':
+        }
+        case 'json': {
           newShapes[imgIndex] = parseCoco(annotations[i].text);
           break;
+        }
         default:
           break;
       }

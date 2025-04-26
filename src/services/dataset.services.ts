@@ -135,7 +135,7 @@ export const saveAnnotationDataset = async (
     const img = images[idx];
     const file = files[idx];
     const existImage = await getImageByName(img.name);
-    let label = labels[idx];
+    const label = labels[idx];
     if (existImage) {
       fs.unlinkSync(file.path);
 
