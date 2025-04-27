@@ -10,10 +10,12 @@ import { updateJob } from './services/job.services';
 import { TrainingJobStatus } from './enums/TrainingJobStatus';
 
 async function startWorker() {
-  const connection = await amqp.connect(process.env.RABBITMQ_URL!);
+  const rabbitMQUrl = `amqp://${process.env.RABBITMQ_USER}:${process.env.RABBITMQ_PASSWORD}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`;
+  const connection = await amqp.connect(rabbitMQUrl);
   const channel = await connection.createChannel();
   await channel.assertQueue(process.env.QUEUE_NAME!, { durable: true });
   await channel.prefetch(1);
+  console.log(`[✔] Connecting to RabbitMQ at ${rabbitMQUrl}`);
   console.log('[*] Worker is waiting for tasks...');
 
   channel.consume(

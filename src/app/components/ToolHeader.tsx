@@ -31,6 +31,7 @@ import {
   faChartLine,
   faProjectDiagram,
   faTrash,
+  faTasks,
 } from '@fortawesome/free-solid-svg-icons';
 
 import {
@@ -322,6 +323,18 @@ function ToolHeader({ type }: { type: ProblemType }) {
     });
   };
 
+  const handleGoTask = () => {
+    Modal.confirm({
+      title: 'Confirm Exit',
+      content:
+        'Are you sure you want to go to the Training Task page? Data may not be saved!',
+      okText: 'OK',
+      cancelText: 'Cancel',
+      onOk: () => router.push('/request'),
+      onCancel: () => setActiveTab(type),
+    });
+  };
+
   const handleMenuDetectClick: MenuProps['onClick'] = e => {
     const selected = detectMenuItems.find(item => item.key === e.key);
     if (selected) {
@@ -465,7 +478,18 @@ function ToolHeader({ type }: { type: ProblemType }) {
             }}
           >
             <FontAwesomeIcon icon={faRobot} className="nav-icon" />
-            <span className="nav-text">Model</span>
+            <span className="nav-text">Models</span>
+          </div>
+
+          <div
+            className={`nav-item ${activeTab === 'task' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('task');
+              handleGoTask();
+            }}
+          >
+            <FontAwesomeIcon icon={faTasks} className="nav-icon" />
+            <span className="nav-text">Tasks</span>
           </div>
 
           <div

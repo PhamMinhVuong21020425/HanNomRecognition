@@ -1,4 +1,21 @@
 services:
+  flask:
+    container_name: sino_nom_flask
+    restart: unless-stopped
+    build:
+      context: HanNomActiveLearning
+      dockerfile: Dockerfile
+      args:
+        PORT: 5000
+    ports:
+      - '5000:5000'
+    environment:
+      PORT: 5000
+    volumes:
+      - flask_volume:/flask_app
+    shm_size: '3gb' # shared memory size used during the run
+    networks:
+      - internal
   db:
     container_name: sino_nom_db
     image: mysql:latest
@@ -95,6 +112,10 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_USER:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      CORS_ORIGIN: http://nginx
+      BACKEND_URL: http://web:8000
+      NEXT_PUBLIC_BASE_URL: http://web:8000
+      NEXT_PUBLIC_FLASK_API: http://flask:5000
     volumes:
       - web_volume:/hannomize
       - node_volume:/hannomize/node_modules
@@ -118,10 +139,13 @@ services:
     depends_on:
       web:
         condition: service_started
+      flask:
+        condition: service_started
     networks:
       - internal
 
 volumes:
+  flask_volume:
   db_volume:
   redis_volume:
   rabbitmq_volume:
