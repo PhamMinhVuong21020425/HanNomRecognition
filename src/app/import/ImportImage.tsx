@@ -38,6 +38,7 @@ import {
   getAllModelsAsync,
   setSelDetectModel,
   setSelClassifyModel,
+  setSelDrawImageIndex,
 } from '@/lib/redux';
 import type { ImageType } from '@/types/ImageType';
 import { ProblemType } from '@/enums/ProblemType';
@@ -276,6 +277,7 @@ function ImportImage() {
         throw new Error('Dataset creation failed');
       }
       dispatch(setSelDataset(dataset));
+      dispatch(setSelDrawImageIndex({ selDrawImageIndex: -1 }));
 
       setImages([]);
       setPreviews([]);
@@ -295,6 +297,7 @@ function ImportImage() {
   const handleGoDataset = async (dataset: Dataset) => {
     setIsLoading(true);
     dispatch(setSelDataset(dataset));
+    dispatch(setSelDrawImageIndex({ selDrawImageIndex: -1 }));
 
     const response = await axios.get(`/be/datasets/${dataset.id}/images`);
     const images = response.data ?? [];

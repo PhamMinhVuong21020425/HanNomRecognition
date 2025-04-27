@@ -26,6 +26,7 @@ import {
   useAppDispatch,
   setSelDataset,
   setImagesRedux,
+  setSelDrawImageIndex,
 } from '@/lib/redux';
 import { getIntl } from '@/utils/i18n';
 import { TrainingJob } from '@/entities/training_job.entity';
@@ -115,6 +116,7 @@ function RequestPage() {
   const handleGoDataset = async (dataset: Dataset) => {
     setIsLoad(true);
     dispatch(setSelDataset(dataset));
+    dispatch(setSelDrawImageIndex({ selDrawImageIndex: -1 }));
 
     try {
       const response = await axios.get(`/be/datasets/${dataset.id}/images`);
