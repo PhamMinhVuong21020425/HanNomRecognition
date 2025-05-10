@@ -103,7 +103,6 @@ services:
       rabbitmq:
         condition: service_healthy
     environment: # override environment variables
-      NODE_ENV: production
       DB_HOST: db
       DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       REDIS_HOST: redis
@@ -116,8 +115,9 @@ services:
       BACKEND_URL: http://web:8000
       NEXT_PUBLIC_BASE_URL: http://web:8000
       NEXT_PUBLIC_FLASK_API: http://flask:5000
+      CHOKIDAR_USEPOLLING: true # polling for file changes in chokidar/nodemon
     volumes:
-      - web_volume:/hannomize
+      - ./src:/hannomize/src
       - node_volume:/hannomize/node_modules
       - upload_volume:/hannomize/uploads
     networks:
@@ -149,7 +149,6 @@ volumes:
   db_volume:
   redis_volume:
   rabbitmq_volume:
-  web_volume:
   node_volume:
   upload_volume:
 

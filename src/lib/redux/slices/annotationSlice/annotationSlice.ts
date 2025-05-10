@@ -54,6 +54,7 @@ const initialState: AnnotationState = {
   xmlPreviewBoxVisible: false,
   urlBoxVisible: false,
   textCopyBoxVisible: false,
+  isSaveAnnotation: true,
 } satisfies AnnotationState as AnnotationState;
 
 /* Annotation Slice */
@@ -255,6 +256,13 @@ export const annotationSlice = createSlice({
     ) => {
       state.textCopyBoxVisible = action.payload.textCopyBoxVisible;
     },
+
+    setIsSaveAnnotation: (
+      state,
+      action: PayloadAction<{ isSaveAnnotation: boolean }>
+    ) => {
+      state.isSaveAnnotation = action.payload.isSaveAnnotation;
+    },
   },
 });
 
@@ -280,6 +288,7 @@ export const {
   deleteSelShape,
   deleteAllShapes,
   setTextCopyBoxVisible,
+  setIsSaveAnnotation,
 } = annotationSlice.actions;
 
 export const annotationReducer = annotationSlice.reducer;

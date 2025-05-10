@@ -81,4 +81,5 @@ export type AnnotationState = {
   xmlPreviewBoxVisible: boolean;
   urlBoxVisible: boolean;
   textCopyBoxVisible: boolean;
+  isSaveAnnotation: boolean;
 };

@@ -53,6 +53,7 @@ import {
   setSelClassifyModel,
   getModelsOfUserAsync,
   getAllModelsAsync,
+  selectIsSaveAnnotation,
 } from '@/lib/redux';
 import { connectSocket } from '@/lib/socket';
 import {
@@ -94,6 +95,7 @@ function ToolHeader({ type }: { type: ProblemType }) {
   const selDataset = useAppSelector(selectSelDataset);
 
   const files = useAppSelector(selectImagesRedux);
+  const isSaveAnnotation = useAppSelector(selectIsSaveAnnotation);
   const isFirstRender = useRef(true);
   const isLoadDataRef = useRef(true);
 
@@ -300,6 +302,11 @@ function ToolHeader({ type }: { type: ProblemType }) {
   }, []);
 
   const handleGoHome = () => {
+    if (isSaveAnnotation) {
+      router.push('/import');
+      return;
+    }
+
     Modal.confirm({
       title: 'Confirm Exit',
       content:
@@ -312,6 +319,11 @@ function ToolHeader({ type }: { type: ProblemType }) {
   };
 
   const handleGoModel = () => {
+    if (isSaveAnnotation) {
+      router.push('/your-model');
+      return;
+    }
+
     Modal.confirm({
       title: 'Confirm Exit',
       content:
@@ -324,6 +336,11 @@ function ToolHeader({ type }: { type: ProblemType }) {
   };
 
   const handleGoTask = () => {
+    if (isSaveAnnotation) {
+      router.push('/request');
+      return;
+    }
+
     Modal.confirm({
       title: 'Confirm Exit',
       content:
