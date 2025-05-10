@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { FormattedMessage } from 'react-intl';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { useAppSelector, selectUser } from '@/lib/redux';
+import { UserRole } from '@/enums/UserRole';
 
 function NavBar() {
   const [showMenu, setShowMenu] = useState(false);
@@ -68,8 +69,15 @@ function NavBar() {
               </svg>
             </a>
           </li>
+          {userData && userData.role === UserRole.ADMIN ? (
+            <li onClick={handleHiddenNav} className="nav-item">
+              <a className="link" href="/admin">
+                <FormattedMessage id="homeheader.admin" />
+              </a>
+            </li>
+          ) : null}
           <li onClick={handleHiddenNav} className="nav-item">
-            <a className="link yourmodel" href="/your-model">
+            <a className="link" href="/your-model">
               <FormattedMessage id="homeheader.yourmodel" />
             </a>
           </li>

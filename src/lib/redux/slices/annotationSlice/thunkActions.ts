@@ -1,6 +1,6 @@
 import axios from '@/lib/axios';
 import { createAppAsyncThunk } from '@/lib/redux/createAppAsyncThunk';
-import type { ReduxState } from '@/lib/redux';
+import { setIsSaveAnnotation, type ReduxState } from '@/lib/redux';
 import {
   fetchFileFromObjectUrl,
   generateCoco,
@@ -21,7 +21,8 @@ type ChunkType = {
 
 export const saveAnnotationData = createAppAsyncThunk(
   'annotation/saveData',
-  async (actionType: string, { getState }) => {
+  async (actionType: string, { dispatch, getState }) => {
+    dispatch(setIsSaveAnnotation({ isSaveAnnotation: false }));
     const state = getState() as ReduxState;
     const { imageFiles, shapes } = state.annotation;
     const dataset = state.dataset.selDataset;
@@ -145,6 +146,8 @@ export const saveAnnotationData = createAppAsyncThunk(
       const result = await sendRequestToServer(imageFiles, [], [], [], []);
       results.push(result);
     }
+
+    dispatch(setIsSaveAnnotation({ isSaveAnnotation: true }));
 
     return {
       success: true,
