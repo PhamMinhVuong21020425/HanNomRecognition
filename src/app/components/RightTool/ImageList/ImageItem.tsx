@@ -14,7 +14,6 @@ import {
   setImageFiles,
   setSelDrawImageIndex,
   setSelImageIndexes,
-  setSelShapeIndex,
   setXmlPreviewBoxStatus,
   useAppDispatch,
   useAppSelector,

@@ -17,6 +17,7 @@ import {
   fetchUserDataAsync,
 } from '@/lib/redux';
 import NavBar from './NavBar';
+import { UserRole } from '@/enums/UserRole';
 
 function Header() {
   const userData = useAppSelector(selectUser);
@@ -247,8 +248,15 @@ function Header() {
                       </svg>
                     </a>
                   </li>
+                  {userData && userData.role === UserRole.ADMIN ? (
+                    <li className="nav-item">
+                      <a className="link" href="/admin">
+                        <FormattedMessage id="homeheader.admin" />
+                      </a>
+                    </li>
+                  ) : null}
                   <li className="nav-item">
-                    <a className="link yourmodel" href="/your-model">
+                    <a className="link" href="/your-model">
                       <FormattedMessage id="homeheader.yourmodel" />
                     </a>
                   </li>

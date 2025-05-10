@@ -80,3 +80,6 @@ export const selectUrlBoxVisible = (state: ReduxState) =>
 
 export const selectTextCopyBoxVisible = (state: ReduxState) =>
   state.annotation.textCopyBoxVisible;
+
+export const selectIsSaveAnnotation = (state: ReduxState) =>
+  state.annotation.isSaveAnnotation;
