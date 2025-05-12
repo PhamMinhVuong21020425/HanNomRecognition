@@ -59,14 +59,12 @@ function RightToolbar({ type }: { type: ProblemType }) {
             : `Labels (${labelClassify ? 1 : 0})`}
         </span>
       ),
-      children: (
-        <div
-          className="overflow-auto"
-          style={{ maxHeight: `${labelMaxHeight}px` }}
-        >
-          {type === ProblemType.DETECT ? <LabelList /> : <LabelItemClassify />}
-        </div>
-      ),
+      children:
+        type === ProblemType.DETECT ? (
+          <LabelList labelMaxHeight={labelMaxHeight} />
+        ) : (
+          <LabelItemClassify />
+        ),
       collapsible: 'header' as const,
       extra: type === ProblemType.DETECT ? <LabelListSetting /> : null,
     },

@@ -1,6 +1,7 @@
 {
   "metadata.login.title": "Login",
   "metadata.signup.title": "Sign up",
+  "metadata.admin.title": "Manage user",
   "metadata.verify.title": "Verify account",
   "metadata.forgot-pass.title": "Forgot password",
   "metadata.import.title": "Annotate Images",
@@ -163,6 +164,17 @@
   "yourmodel.noModelsFound": "No models found",
   "yourmodel.createModelPrompt": "Create your first model to get started.",
   "yourmodel.createModel": "Create Model",
+
+  "admin.search": "Search users",
+  "admin.noUsers": "No users found",
+  "admin.name": "Name",
+  "admin.email": "Email",
+  "admin.role": "Role",
+  "admin.birthday": "Birthday",
+  "admin.contact": "Contact",
+  "admin.status": "Status",
+  "admin.active": "Active",
+  "admin.inactive": "Inactive",
 
   "error.internalError": "Internal Server Error",
   "error.user_exists": "User already exists",
