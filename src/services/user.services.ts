@@ -4,6 +4,27 @@ import { AuthType } from '../enums/AuthType';
 
 const userRepository = AppDataSource.getRepository(User);
 
+export const getAllUsers = async () => {
+  return userRepository.find({
+    order: {
+      name: 'ASC',
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      gender: true,
+      phone: true,
+      about: true,
+      birthday: true,
+      avatar_url: true,
+      isActivate: true,
+      isVerify: true,
+    },
+  });
+};
+
 export const getUserById = async (id: string) => {
   return userRepository.findOne({ where: { id } });
 };

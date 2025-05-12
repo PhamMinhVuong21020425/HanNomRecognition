@@ -44,10 +44,9 @@ const YourModel: React.FC = () => {
   useEffect(() => {
     if (!userData) return;
     setIsLoad(true);
-    dispatch(getAllModelsAsync(userData.id))
-      .then(() => setIsLoad(false))
-      .catch(() => setIsLoad(false));
-  }, [dispatch, userData]);
+    dispatch(getAllModelsAsync(userData.id));
+    setIsLoad(false);
+  }, [userData]);
 
   useEffect(() => {
     if (!allModels) return;

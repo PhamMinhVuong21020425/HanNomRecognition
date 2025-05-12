@@ -8,7 +8,7 @@ import {
   useAppSelector,
 } from '@/lib/redux';
 
-function LabelList() {
+function LabelList({ labelMaxHeight }: { labelMaxHeight: number }) {
   const selDrawImageIndex = useAppSelector(selectSelDrawImageIndex);
   const shapes = useAppSelector(selectShapes);
   const selShapeIndex = useAppSelector(selectSelShapeIndex);
@@ -21,7 +21,7 @@ function LabelList() {
         `label-item-${selDrawImageIndex}-${selShapeIndex}`
       );
 
-      if (element && containerRef.current) {
+      if (element) {
         // Calculate positions relative to the container
         const container = containerRef.current;
         const containerRect = container.getBoundingClientRect();
@@ -53,7 +53,11 @@ function LabelList() {
   }, [selShapeIndex]);
 
   return (
-    <Row justify="start" style={{ overflow: 'auto' }} ref={containerRef}>
+    <Row
+      justify="start"
+      style={{ maxHeight: `${labelMaxHeight}px`, overflow: 'auto' }}
+      ref={containerRef}
+    >
       {shapes[selDrawImageIndex] &&
         Array.isArray(shapes[selDrawImageIndex]) &&
         shapes[selDrawImageIndex].map((item, index) => (

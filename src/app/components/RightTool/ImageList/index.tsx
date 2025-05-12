@@ -19,7 +19,7 @@ function ImageList({ type }: { type: ProblemType }) {
       const itemName = imageFiles[selDrawImageIndex]?.name;
       const element = document.getElementById(`image-item-${itemName}`);
 
-      if (element && containerRef.current) {
+      if (element) {
         // Calculate positions relative to the container
         const container = containerRef.current;
         const containerRect = container.getBoundingClientRect();
