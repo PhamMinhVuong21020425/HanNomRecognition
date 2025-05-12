@@ -1,6 +1,7 @@
 {
   "metadata.login.title": "Đăng nhập",
   "metadata.signup.title": "Đăng ký",
+  "metadata.admin.title": "Quản lý người dùng",
   "metadata.verify.title": "Xác minh tài khoản",
   "metadata.forgot-pass.title": "Quên mật khẩu",
   "metadata.import.title": "Nhận diện hình ảnh",
@@ -163,6 +164,17 @@
   "yourmodel.noModelsFound": "Không tìm thấy mô hình nào",
   "yourmodel.createModelPrompt": "Tạo mô hình đầu tiên của bạn để bắt đầu.",
   "yourmodel.createModel": "Tạo mô hình",
+
+  "admin.search": "Tìm kiếm người dùng",
+  "admin.noUsers": "Không tìm thấy người dùng",
+  "admin.name": "Họ Tên",
+  "admin.email": "Email",
+  "admin.role": "Vai trò",
+  "admin.birthday": "Ngày sinh",
+  "admin.contact": "Liên hệ",
+  "admin.status": "Trạng thái",
+  "admin.active": "Kích hoạt",
+  "admin.inactive": "Vô hiệu hóa",
 
   "error.internalError": "Lỗi máy chủ",
   "error.user_exists": "Tài khoản đã tồn tại",
