@@ -197,7 +197,7 @@ function Header() {
                           <span className="email">{userData.email}</span>
                         </div>
                       </div>
-                      <a href="/" className="account-link">
+                      <a href="/profile" className="account-link">
                         <i className="icon">
                           <FontAwesomeIcon icon={faSquarePen} />
                         </i>
@@ -205,7 +205,7 @@ function Header() {
                           <FormattedMessage id="homeheader.profile" />
                         </span>
                       </a>
-                      <a href="/" className="account-link">
+                      <a href="/change-pass" className="account-link">
                         <i className="icon">
                           <FontAwesomeIcon icon={faKey} />
                         </i>

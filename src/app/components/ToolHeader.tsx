@@ -424,7 +424,7 @@ function ToolHeader({ type }: { type: ProblemType }) {
     {
       key: '1',
       label: (
-        <Link href="/" className="account-link">
+        <Link href="/profile" className="account-link">
           <i className="icon">
             <FontAwesomeIcon icon={faSquarePen} />
           </i>
@@ -437,7 +437,7 @@ function ToolHeader({ type }: { type: ProblemType }) {
     {
       key: '2',
       label: (
-        <Link href="/" className="account-link">
+        <Link href="/change-pass" className="account-link">
           <i className="icon">
             <FontAwesomeIcon icon={faKey} />
           </i>
@@ -680,7 +680,17 @@ function ToolHeader({ type }: { type: ProblemType }) {
             <div className="user-profile">
               <Avatar
                 size="small"
-                icon={<FontAwesomeIcon icon={faUser} />}
+                icon={
+                  userData.avatar_url ? (
+                    <img
+                      src={userData.avatar_url}
+                      alt="avatar"
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <FontAwesomeIcon icon={faUser} />
+                  )
+                }
                 className="user-avatar"
               />
               <span className="username">{userData.name}</span>
