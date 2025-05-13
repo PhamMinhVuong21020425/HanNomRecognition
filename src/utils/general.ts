@@ -69,6 +69,7 @@ export const normalizeFileName = (fileName: string) => {
 
 // fetch file from server
 export const getObjectUrlFromPath = async (filePath: string) => {
+  if (filePath.startsWith('http')) return filePath;
   const response = await axios.post(
     '/be/files/view',
     {

@@ -212,7 +212,7 @@ const Admin: React.FC = () => {
               <>
                 <div className="overflow-x-auto border-b">
                   <table className="min-w-full divide-y divide-gray-200 table-fixed">
-                    <thead className="bg-blue-100">
+                    <thead className="bg-blue-50">
                       <tr>
                         <th
                           scope="col"
@@ -351,7 +351,7 @@ const Admin: React.FC = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <div className="flex justify-center">
                               <span
-                                className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleColor(user.role)}`}
+                                className={`px-2 py-1 flex items-center text-xs leading-5 font-semibold rounded-full ${getRoleColor(user.role)}`}
                                 title={user.role || 'User'}
                               >
                                 <Shield className="h-3.5 w-3.5 mr-1" />{' '}

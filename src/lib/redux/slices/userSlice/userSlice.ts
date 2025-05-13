@@ -2,7 +2,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 /* Instruments */
-import { fetchUserDataAsync } from './thunkActions';
+import { fetchUserDataAsync, updateUserDataAsync } from './thunkActions';
 import { UserData } from '@/types/UserData';
 
 /* Types */
@@ -33,6 +33,13 @@ export const userSlice = createSlice({
         state.status = 'loading';
       })
       .addCase(fetchUserDataAsync.fulfilled, (state, action) => {
+        state.status = 'idle';
+        state.userData = action.payload;
+      })
+      .addCase(updateUserDataAsync.pending, state => {
+        state.status = 'loading';
+      })
+      .addCase(updateUserDataAsync.fulfilled, (state, action) => {
         state.status = 'idle';
         state.userData = action.payload;
       });
