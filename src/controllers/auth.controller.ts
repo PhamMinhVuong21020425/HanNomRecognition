@@ -9,6 +9,7 @@ import {
   saveUser,
   authenticateUser,
 } from '../services/auth.services';
+import { getUserById } from '../services/user.services';
 import { UserRole } from '../enums/UserRole';
 import { RegisterDTO } from '../dtos/register.dto';
 import { LoginDTO } from '../dtos/login.dto';
@@ -19,23 +20,23 @@ import { EXPIRED_TIME } from '../constants';
 
 export const getAuthInfo = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    if (req.session.user) {
-      const user = req.session.user;
-      const userData = {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        gender: user.gender,
-        phone: user.phone,
-        about: user.about,
-        birthday: user.birthday,
-        avatar_url: user.avatar_url,
-      };
-      res.json({ user: userData });
-    } else {
+    const user = await getUserById(req.session.user?.id || '');
+    if (!user) {
       res.json({ user: null });
+      return;
     }
+    const userData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      gender: user.gender,
+      phone: user.phone,
+      about: user.about,
+      birthday: user.birthday,
+      avatar_url: user.avatar_url,
+    };
+    res.json({ user: userData });
   }
 );
 

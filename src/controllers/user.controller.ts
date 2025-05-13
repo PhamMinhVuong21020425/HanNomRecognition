@@ -11,6 +11,9 @@ export const getUserList = asyncHandler(
 
 export const userUpdatePost = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
+    if (req.file) {
+      req.body.avatar_url = req.file.path;
+    }
     const updatedUser = await userServices.updateUser(req.params.id, req.body);
     res.json(updatedUser);
   }
