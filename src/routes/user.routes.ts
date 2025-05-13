@@ -10,6 +10,8 @@ router.post(
   userController.userUpdatePost
 );
 
+router.post('/:id/change-pass', userController.userChangePassPost);
+
 router.get('/', userController.getUserList);
 
 export default router;
