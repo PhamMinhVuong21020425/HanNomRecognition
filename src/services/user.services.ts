@@ -49,3 +49,27 @@ export const updateUser = async (id: string, updateData: Partial<User>) => {
   Object.assign(user, updateData);
   return userRepository.save(user);
 };
+
+export const changePassword = async (
+  id: string,
+  currentPass: string,
+  newPass: string
+) => {
+  const user = await getUserById(id);
+  if (!user) {
+    return {
+      success: false,
+      message: 'password.error.not_found',
+    };
+  }
+  const isMatch = await user.comparePassword(currentPass);
+  if (!isMatch) {
+    return {
+      success: false,
+      message: 'password.error.not_match',
+    };
+  }
+  user.hash_password = await user.hashPassword(newPass);
+  await userRepository.save(user);
+  return { success: true };
+};
