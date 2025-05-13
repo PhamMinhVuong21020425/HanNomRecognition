@@ -18,3 +18,14 @@ export const userUpdatePost = asyncHandler(
     res.json(updatedUser);
   }
 );
+
+export const userChangePassPost = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await userServices.changePassword(
+      req.params.id,
+      req.body.currentPassword,
+      req.body.newPassword
+    );
+    res.json(result);
+  }
+);

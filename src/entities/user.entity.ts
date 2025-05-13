@@ -86,7 +86,10 @@ export class User {
     return code.toString().padStart(6, '0');
   }
 
-  async hashPassword(password: string, auth_type: AuthType): Promise<string> {
+  async hashPassword(
+    password: string,
+    auth_type: AuthType = AuthType.LOCAL
+  ): Promise<string> {
     if (auth_type === AuthType.GOOGLE && password === '') {
       password = process.env.GOOGLE_PASSWORD!;
     }
