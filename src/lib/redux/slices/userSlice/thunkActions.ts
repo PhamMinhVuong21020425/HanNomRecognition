@@ -37,7 +37,7 @@ export const updateUserDataAsync = createAppAsyncThunk(
     formData.append('role', data.role);
     formData.append('phone', data.phone);
     formData.append('gender', data.gender);
-    formData.append('birthday', data.birthday.toString());
+    if (data.birthday) formData.append('birthday', data.birthday.toString());
     formData.append('about', data.about);
 
     if (avatarFile) {
