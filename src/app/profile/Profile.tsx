@@ -38,7 +38,13 @@ const Profile = () => {
   useEffect(() => {
     document.title = intl.formatMessage({ id: 'metadata.profile.title' });
     if (userData) {
-      setUser(userData);
+      setUser({
+        ...userData,
+        gender: userData.gender || 'Male',
+        phone: userData.phone || '',
+        about: userData.about || '',
+        avatar_url: userData.avatar_url || '',
+      });
     }
   }, [locale, userData]);
 
@@ -285,7 +291,7 @@ const Profile = () => {
                           value={
                             typeof user.birthday === 'string'
                               ? user.birthday
-                              : user.birthday instanceof Date
+                              : user.birthday && user.birthday instanceof Date
                                 ? user.birthday.toISOString().split('T')[0]
                                 : ''
                           }
