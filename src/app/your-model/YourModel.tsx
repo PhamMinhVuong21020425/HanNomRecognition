@@ -1,6 +1,8 @@
 'use client';
 import '../scss/YourModel.scss';
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { FolderX } from 'lucide-react';
 
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -29,6 +31,7 @@ const YourModel: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredModels, setFilteredModels] = useState<Model[]>([]);
 
+  const router = useRouter();
   const dispatch = useAppDispatch();
 
   const userData = useAppSelector(selectUser);
@@ -128,107 +131,138 @@ const YourModel: React.FC = () => {
             </div>
           </div>
 
-          {userData && allModels ? (
+          {userData ? (
             <>
-              {filteredModels.length > 0 ? (
-                <div className="model-table">
-                  <div className="table-header">
-                    <div className="header-row">
-                      <div className="col-index">#</div>
-                      <div className="col-date">
-                        {intl.formatMessage({ id: 'yourmodel.createdAt' }) ||
-                          'Created At'}
-                      </div>
-                      <div className="col-name">
-                        {intl.formatMessage({ id: 'yourmodel.modelName' }) ||
-                          'Model Name'}
-                      </div>
-                      <div className="col-type">
-                        {intl.formatMessage({ id: 'yourmodel.type' }) || 'Type'}
-                      </div>
-                      <div className="col-accuracy">
-                        {intl.formatMessage({ id: 'yourmodel.accuracy' }) ||
-                          'Accuracy'}
-                      </div>
-                      <div className="col-actions">
-                        {intl.formatMessage({ id: 'yourmodel.actions' }) ||
-                          'Actions'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="table-body">
-                    {currentTableData.map((model, index) => (
-                      <div key={model.id} className="table-row">
-                        <div className="col-index">
-                          {(currentPage - 1) * PageSize + index + 1}
-                        </div>
-                        <div className="col-date">
-                          {formatDate(model.created_at)}
-                        </div>
-                        <div className="col-name" title={model.name}>
-                          {model.name}
-                        </div>
-                        <div className="col-type">
-                          <span
-                            className={`type-badge type-${model.type.toLowerCase()}`}
-                          >
-                            {model.type}
-                          </span>
-                        </div>
-                        <div className="col-accuracy">
-                          {model.accuracy
-                            ? `${(model.accuracy * 100).toFixed(2)}%`
-                            : '-'}
-                        </div>
-                        <div className="col-actions">
-                          <button
-                            className="action-button view-button"
-                            onClick={() => handleShowModelDetails(model)}
-                          >
+              {allModels.length > 0 ? (
+                <>
+                  {filteredModels.length > 0 ? (
+                    <div className="model-table">
+                      <div className="table-header">
+                        <div className="header-row">
+                          <div className="col-index">#</div>
+                          <div className="col-date">
                             {intl.formatMessage({
-                              id: 'yourmodel.viewDetails',
-                            }) || 'View Details'}
-                          </button>
+                              id: 'yourmodel.createdAt',
+                            }) || 'Created At'}
+                          </div>
+                          <div className="col-name">
+                            {intl.formatMessage({
+                              id: 'yourmodel.modelName',
+                            }) || 'Model Name'}
+                          </div>
+                          <div className="col-type">
+                            {intl.formatMessage({ id: 'yourmodel.type' }) ||
+                              'Type'}
+                          </div>
+                          <div className="col-accuracy">
+                            {intl.formatMessage({ id: 'yourmodel.accuracy' }) ||
+                              'Accuracy'}
+                          </div>
+                          <div className="col-actions">
+                            {intl.formatMessage({ id: 'yourmodel.actions' }) ||
+                              'Actions'}
+                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
 
-                  {filteredModels.length > PageSize && (
-                    <div className="pagination-wrapper">
-                      <Pagination
-                        className="pagination-bar"
-                        currentPage={currentPage}
-                        totalCount={filteredModels.length}
-                        pageSize={PageSize}
-                        onPageChange={page => setCurrentPage(page)}
-                      />
+                      <div className="table-body">
+                        {currentTableData.map((model, index) => (
+                          <div key={model.id} className="table-row">
+                            <div className="col-index">
+                              {(currentPage - 1) * PageSize + index + 1}
+                            </div>
+                            <div className="col-date">
+                              {formatDate(model.created_at)}
+                            </div>
+                            <div className="col-name" title={model.name}>
+                              {model.name}
+                            </div>
+                            <div className="col-type">
+                              <span
+                                className={`type-badge type-${model.type.toLowerCase()}`}
+                              >
+                                {model.type}
+                              </span>
+                            </div>
+                            <div className="col-accuracy">
+                              {model.accuracy
+                                ? `${(model.accuracy * 100).toFixed(2)}%`
+                                : '-'}
+                            </div>
+                            <div className="col-actions">
+                              <button
+                                className="action-button view-button"
+                                onClick={() => handleShowModelDetails(model)}
+                              >
+                                {intl.formatMessage({
+                                  id: 'yourmodel.viewDetails',
+                                }) || 'View Details'}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {filteredModels.length > PageSize && (
+                        <div className="pagination-wrapper">
+                          <Pagination
+                            className="pagination-bar"
+                            currentPage={currentPage}
+                            totalCount={filteredModels.length}
+                            pageSize={PageSize}
+                            onPageChange={page => setCurrentPage(page)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="no-results">
+                      {intl.formatMessage({ id: 'yourmodel.noModelsFound' }) ||
+                        'No models found matching your search.'}
                     </div>
                   )}
-                </div>
+                </>
               ) : (
-                <div className="no-results">
-                  {intl.formatMessage({ id: 'yourmodel.noModelsFound' }) ||
-                    'No models found matching your search.'}
+                <div className="empty-state">
+                  <div className="empty-icon">📊</div>
+                  <h2>
+                    {intl.formatMessage({ id: 'yourmodel.noModelsYet' }) ||
+                      "You don't have any models yet!"}
+                  </h2>
+                  <p>
+                    {intl.formatMessage({
+                      id: 'yourmodel.createModelPrompt',
+                    }) || 'Create your first model to get started.'}
+                  </p>
+                  <a href="/import" className="create-model-button">
+                    {intl.formatMessage({ id: 'yourmodel.createModel' }) ||
+                      'Create Model'}
+                  </a>
                 </div>
               )}
             </>
           ) : (
-            <div className="empty-state">
-              <div className="empty-icon">📊</div>
-              <h2>
-                {intl.formatMessage({ id: 'yourmodel.noModelsYet' }) ||
-                  "You don't have any models yet!"}
-              </h2>
-              <p>
-                {intl.formatMessage({ id: 'yourmodel.createModelPrompt' }) ||
-                  'Create your first model to get started.'}
-              </p>
-              <a href="/import" className="create-model-button">
-                {intl.formatMessage({ id: 'yourmodel.createModel' }) ||
-                  'Create Model'}
-              </a>
+            <div className="flex flex-col items-center justify-center p-10 mx-auto my-8 max-w-md">
+              <div className="flex items-center justify-center w-16 h-16 mb-6 bg-blue-50 rounded-full">
+                <FolderX className="w-8 h-8 text-blue-600" />
+              </div>
+
+              <h3 className="mb-4 text-2xl font-semibold text-gray-800">
+                Không có dữ liệu
+              </h3>
+
+              <div className="text-center text-lg mb-6 text-gray-600">
+                <p>
+                  Bạn cần{' '}
+                  <button
+                    className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
+                    onClick={() => router.push('/auth/login')}
+                  >
+                    đăng nhập
+                  </button>{' '}
+                  để có thể xem các Mô hình của bạn.
+                </p>
+              </div>
             </div>
           )}
         </div>
